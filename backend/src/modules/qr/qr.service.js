@@ -84,8 +84,8 @@ async function validateQrToken(token) {
   );
 
   // Look up student and user
-  const student = await getItem('Students', { studentId: qr.student_id });
-  const user = await getItem('Users', { userId: student.user_id });
+  const student = qr.student_id ? await getItem('Students', { studentId: qr.student_id }) : null;
+  const user = (student && student.user_id) ? await getItem('Users', { userId: student.user_id }) : null;
 
   // Create gate log
   const logId = uuidv4();
@@ -101,7 +101,13 @@ async function validateQrToken(token) {
     created_at: now,
   });
 
-  return { gate_log_id: logId, student_name: user.full_name, gr_number: student.gr_number, source: 'QR', scanned_at: now };
+  return { 
+    gate_log_id: logId, 
+    student_name: user?.full_name || 'Unknown Student', 
+    gr_number: student?.gr_number || 'N/A', 
+    source: 'QR', 
+    scanned_at: now 
+  };
 }
 
 module.exports = { generateQrToken, validateQrToken };

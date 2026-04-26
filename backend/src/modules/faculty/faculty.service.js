@@ -295,16 +295,24 @@ async function listFaculties() {
   const allFaculty = await scanItems('Faculty');
   const enriched = [];
   for (const f of allFaculty) {
-    const user = await getItem('Users', { userId: f.user_id });
-    const dept = f.department_id ? await getItem('Departments', { departmentId: f.department_id }) : null;
+    let user = null;
+    if (f.user_id) {
+      user = await getItem('Users', { userId: f.user_id });
+    }
+    
+    let dept = null;
+    if (f.department_id) {
+      dept = await getItem('Departments', { departmentId: f.department_id });
+    }
+
     enriched.push({
       ...f,
       id: f.facultyId,
-      full_name: user?.full_name,
-      email: user?.email,
-      phone: user?.phone,
+      full_name: user?.full_name || 'N/A',
+      email: user?.email || 'N/A',
+      phone: user?.phone || 'N/A',
       is_active: user?.is_active,
-      department_name: dept ? dept.name : f.department,
+      department_name: dept ? dept.name : (f.department || 'N/A'),
     });
   }
   return enriched;

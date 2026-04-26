@@ -134,16 +134,20 @@ async function getGateLogs({ date, source, page = 1, limit = 50 }) {
   // Enrich with student + user data
   const enrichedLogs = [];
   for (const g of paginatedLogs) {
-    const student = await getItem('Students', { studentId: g.student_id });
-    const user = student ? await getItem('Users', { userId: student.user_id }) : null;
+    let student = null;
+    if (g.student_id) {
+      student = await getItem('Students', { studentId: g.student_id });
+    }
+    
+    const user = (student && student.user_id) ? await getItem('Users', { userId: student.user_id }) : null;
     enrichedLogs.push({
       id: g.logId,
       source: g.source,
       scanned_at: g.scanned_at,
       gate_name: g.gate_name,
-      student_name: user?.full_name,
-      gr_number: student?.gr_number,
-      roll_number: student?.roll_number,
+      student_name: user?.full_name || 'N/A',
+      gr_number: student?.gr_number || 'N/A',
+      roll_number: student?.roll_number || 'N/A',
     });
   }
 

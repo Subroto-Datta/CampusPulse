@@ -38,20 +38,30 @@ async function listStudents({ search, department, page = 1, limit = 50 }) {
   // Enrich with user and department data
   let enriched = [];
   for (const s of students) {
-    const user = await getItem('Users', { userId: s.user_id });
-    const dept = await getItem('Departments', { departmentId: s.department_id });
+    let user = null;
+    if (s.user_id) {
+      user = await getItem('Users', { userId: s.user_id });
+    }
+
+    let dept = null;
+    if (s.department_id) {
+      dept = await getItem('Departments', { departmentId: s.department_id });
+    }
+
     enriched.push({
       id: s.studentId,
+      user_id: s.user_id,
       gr_number: s.gr_number,
       roll_number: s.roll_number,
       division: s.division,
       semester: s.semester,
-      full_name: user?.full_name,
-      email: user?.email,
+      full_name: user?.full_name || 'N/A',
+      email: user?.email || 'N/A',
       phone: user?.phone,
       is_active: user?.is_active,
-      department_name: dept?.name,
+      department_name: dept?.name || 'N/A',
       department_code: dept?.code,
+      attendance_summary: s.attendance_summary || { overall_pct: 0, total_sessions: 0 },
     });
   }
 

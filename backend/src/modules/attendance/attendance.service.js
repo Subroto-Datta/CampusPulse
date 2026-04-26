@@ -94,14 +94,18 @@ async function getAlerts({ resolved, limit = 50 }) {
   // Enrich with student data
   const enriched = [];
   for (const a of alerts) {
-    const student = await getItem('Students', { studentId: a.student_id });
-    const user = student ? await getItem('Users', { userId: student.user_id }) : null;
+    let student = null;
+    if (a.student_id) {
+      student = await getItem('Students', { studentId: a.student_id });
+    }
+    
+    const user = (student && student.user_id) ? await getItem('Users', { userId: student.user_id }) : null;
     enriched.push({
       ...a,
       id: a.alertId,
-      student_name: user?.full_name,
-      gr_number: student?.gr_number,
-      roll_number: student?.roll_number,
+      student_name: user?.full_name || 'N/A',
+      gr_number: student?.gr_number || 'N/A',
+      roll_number: student?.roll_number || 'N/A',
     });
   }
   return enriched;

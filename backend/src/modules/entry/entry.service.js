@@ -34,18 +34,18 @@ async function processRfidEntry({ rfid_uid, timestamp }) {
   if (!card.is_active) throw new AppError('RFID card is deactivated', 403);
 
   // Look up student and user
-  const student = await getItem('Students', { studentId: card.student_id });
-  const user = await getItem('Users', { userId: student.user_id });
+  const student = card.student_id ? await getItem('Students', { studentId: card.student_id }) : null;
+  const user = (student && student.user_id) ? await getItem('Users', { userId: student.user_id }) : null;
 
   // Duplicate check — look for gate logs from same student in last 5 minutes
   const fiveMinAgo = new Date(scanTime.getTime() - 5 * 60 * 1000).toISOString();
-  const recentLogs = await queryItems('GateLogs', {
+  const recentLogs = card.student_id ? await queryItems('GateLogs', {
     IndexName: 'StudentTimeIndex',
     KeyConditionExpression: 'student_id = :sid AND scanned_at > :since',
     FilterExpression: '#src = :rfid',
     ExpressionAttributeValues: { ':sid': card.student_id, ':since': fiveMinAgo, ':rfid': 'RFID' },
     ExpressionAttributeNames: { '#src': 'source' },
-  });
+  }) : [];
   if (recentLogs.length) throw new AppError('Duplicate scan — entry already logged within last 5 minutes', 429);
 
   // Insert gate log
@@ -65,8 +65,8 @@ async function processRfidEntry({ rfid_uid, timestamp }) {
 
   return {
     gate_log_id: logId,
-    student_name: user.full_name,
-    gr_number: student.gr_number,
+    student_name: user?.full_name || 'Unknown Student',
+    gr_number: student?.gr_number || 'N/A',
     source: 'RFID',
     scanned_at: gateLog.scanned_at,
   };
