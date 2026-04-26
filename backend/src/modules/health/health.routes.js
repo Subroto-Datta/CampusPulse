@@ -1,6 +1,5 @@
 const { Router } = require('express');
-const { tableName, isMock, docClient } = require('../../config/db');
-const { DescribeTableCommand } = require('@aws-sdk/client-dynamodb');
+const { isMock, getItem } = require('../../config/db');
 const ApiResponse = require('../../utils/apiResponse');
 
 const router = Router();
@@ -10,14 +9,14 @@ router.get('/', async (_req, res) => {
   try {
     if (isMock()) {
       dbStatus = 'mock (in-memory)';
-    } else if (docClient) {
-      // Lightweight DynamoDB connectivity check via DescribeTable
-      await docClient.config.client.send(
-        new DescribeTableCommand({ TableName: tableName('Users') })
-      );
+    } else {
+      // Lightweight DynamoDB connectivity check using a data-plane operation
+      await getItem('Users', { userId: 'health-check-ping' });
       dbStatus = 'connected (DynamoDB)';
     }
-  } catch (_) { /* connectivity check failed — report disconnected */ }
+  } catch (err) {
+    console.error('[Health Check] DynamoDB connectivity failed:', err.message);
+  }
 
   return ApiResponse.success(res, {
     status: 'ok',
