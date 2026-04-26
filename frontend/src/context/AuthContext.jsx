@@ -33,11 +33,16 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password });
-    const { user: userData, token } = data.data;
+    const { token } = data.data;
+    // Store token first so the /auth/me request is authenticated
     localStorage.setItem('cp_token', token);
-    localStorage.setItem('cp_user', JSON.stringify(userData));
-    setUser(userData);
-    return userData;
+    // Fetch the full enriched profile (includes student_id, faculty_id, gr_number, dept etc.)
+    // so the Dashboard and other pages get the right data on first render — no refresh needed
+    const { data: meData } = await api.get('/auth/me');
+    const fullUser = meData.data;
+    localStorage.setItem('cp_user', JSON.stringify(fullUser));
+    setUser(fullUser);
+    return fullUser;
   }, []);
 
   const logout = useCallback(() => {

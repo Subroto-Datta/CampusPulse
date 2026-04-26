@@ -3,7 +3,25 @@ const { isMock, queryItems, scanItems, getItem } = require('../../config/db');
 function getMock() { return require('../../config/mockDb'); }
 
 async function dailyAttendanceTrend(days = 30) {
-  if (isMock()) { return []; }
+  if (isMock()) {
+    // Generate realistic 30-day trend with weekends having no sessions
+    const trend = [];
+    const today = new Date();
+    for (let i = parseInt(days) - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dow = d.getDay(); // 0=Sun, 6=Sat
+      if (dow === 0 || dow === 6) continue; // skip weekends
+      const date = d.toISOString().slice(0, 10);
+      const total = 9; // 3 students x 3 courses
+      // Vary attendance by a realistic pattern
+      const basePresent = 7;
+      const noise = Math.floor(Math.sin(i) * 1.5); // deterministic variation
+      const present = Math.max(4, Math.min(total, basePresent + noise));
+      trend.push({ session_date: date, total, present, pct: Math.round(present / total * 1000) / 10 });
+    }
+    return trend;
+  }
 
   const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -39,7 +57,14 @@ async function dailyAttendanceTrend(days = 30) {
 }
 
 async function subjectWiseAttendance() {
-  if (isMock()) { return []; }
+  if (isMock()) {
+    // Mirror the 3 mockDb courses with realistic attendance numbers
+    return [
+      { code: 'CS301', course_name: 'Data Structures',   total_records: 27, present: 24, attendance_pct: 88.9 },
+      { code: 'CS302', course_name: 'Operating Systems', total_records: 27, present: 21, attendance_pct: 77.8 },
+      { code: 'CS303', course_name: 'Database Systems',  total_records: 27, present: 18, attendance_pct: 66.7 },
+    ];
+  }
 
   const courses = await scanItems('Courses');
   const results = [];
@@ -78,7 +103,22 @@ async function subjectWiseAttendance() {
 }
 
 async function lowAttendanceStudents() {
-  if (isMock()) { return []; }
+  if (isMock()) {
+    // Database Systems has < 75% => student3 (Rahul Mehta) falls below threshold
+    return [
+      {
+        id: 's0000000-0000-0000-0000-000000000003',
+        gr_number: 'GR2024003',
+        roll_number: '103',
+        division: 'A',
+        full_name: 'Rahul Mehta',
+        dept_code: 'CS',
+        total_sessions: 27,
+        present: 18,
+        attendance_pct: 66.7,
+      },
+    ];
+  }
 
   const students = await scanItems('Students');
   const results = [];
@@ -117,7 +157,12 @@ async function lowAttendanceStudents() {
 }
 
 async function bunkSuspects(days = 7) {
-  if (isMock()) { return []; }
+  if (isMock()) {
+    return [
+      { id: 's0000000-0000-0000-0000-000000000003', gr_number: 'GR2024003', roll_number: '103', full_name: 'Rahul Mehta',  bunk_count: 3 },
+      { id: 's0000000-0000-0000-0000-000000000002', gr_number: 'GR2024002', roll_number: '102', full_name: 'Priya Desai',  bunk_count: 1 },
+    ];
+  }
 
   const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
@@ -151,7 +196,12 @@ async function bunkSuspects(days = 7) {
 }
 
 async function lateArrivals(days = 7) {
-  if (isMock()) { return []; }
+  if (isMock()) {
+    return [
+      { id: 's0000000-0000-0000-0000-000000000002', gr_number: 'GR2024002', roll_number: '102', full_name: 'Priya Desai',  late_count: 4 },
+      { id: 's0000000-0000-0000-0000-000000000001', gr_number: 'GR2024001', roll_number: '101', full_name: 'Aarav Patel',  late_count: 2 },
+    ];
+  }
 
   const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 

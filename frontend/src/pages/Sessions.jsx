@@ -34,7 +34,7 @@ export default function Sessions() {
   };
 
   const loadFaculties = () => {
-    api.get('/admin/faculties')
+    api.get('/faculty')
       .then(({ data }) => setFaculties(data.data || []))
       .catch(console.error);
   };
@@ -185,7 +185,7 @@ export default function Sessions() {
                     <label className="block text-xs font-medium text-gray-400 mb-1">Assign Faculty</label>
                     <select required value={formData.faculty_id} onChange={e => setFormData({...formData, faculty_id: e.target.value})} className="input-field">
                       <option value="">Select Faculty...</option>
-                      {faculties.map(f => <option key={f.id} value={f.id}>{f.full_name} ({f.department})</option>)}
+                      {faculties.map(f => <option key={f.id} value={f.id}>{f.full_name} ({f.department_name || f.department || f.employee_id || 'Faculty'})</option>)}
                     </select>
                   </div>
                   <div className="sm:col-span-2">
