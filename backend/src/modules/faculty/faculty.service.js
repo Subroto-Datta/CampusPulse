@@ -319,49 +319,67 @@ async function listFaculties() {
 }
 
 async function createFaculty(data) {
-  if (isMock()) {
-    const mock = getMock();
-    const newId = mock.uuid();
-    const userId = mock.uuid();
-    mock.store.users.push({
-      id: userId, email: data.email || `f${Date.now()}@campuspulse.edu`, role: 'faculty',
-      full_name: data.full_name, is_active: data.is_active !== false, password_hash: 'hash'
+  try {
+    if (isMock()) {
+      const mock = getMock();
+      const newId = mock.uuid();
+      const userId = mock.uuid();
+      mock.store.users.push({
+        id: userId, email: data.email || `f${Date.now()}@campuspulse.edu`, role: 'faculty',
+        full_name: data.full_name, is_active: data.is_active !== false, password_hash: 'hash'
+      });
+      mock.store.faculty.push({ id: newId, user_id: userId, ...data });
+      return { id: newId, ...data };
+    }
+
+    const now = new Date().toISOString();
+
+    // Check if user already exists with this email
+    let userId;
+    const existingUsers = await queryItems('Users', {
+      IndexName: 'EmailIndex',
+      KeyConditionExpression: 'email = :email',
+      ExpressionAttributeValues: { ':email': data.email?.trim().toLowerCase() || '' },
+      Limit: 1
     });
-    mock.store.faculty.push({ id: newId, user_id: userId, ...data });
-    return { id: newId, ...data };
+
+    if (existingUsers.length > 0) {
+      userId = existingUsers[0].userId;
+      console.log(`[FacultyService] Found existing user [${userId}] for email ${data.email}`);
+    } else {
+      userId = uuidv4();
+      const password_hash = await bcrypt.hash('Password123!', 12);
+      const user = {
+        userId,
+        email: data.email || `faculty_${Date.now()}@campuspulse.edu`,
+        password_hash,
+        role: 'faculty',
+        full_name: data.full_name || 'Unknown Faculty',
+        phone: data.phone || null,
+        is_active: data.is_active !== false,
+        last_login: null,
+        created_at: now,
+        updated_at: now,
+      };
+      await putItem('Users', user);
+    }
+
+    const facultyId = uuidv4();
+    const faculty = {
+      facultyId,
+      user_id: userId,
+      department_id: data.department_id || 'd0000000-0000-0000-0000-000000000001',
+      employee_id: data.employee_id || `FAC_${Date.now()}`,
+      designation: data.designation || 'Faculty Member',
+      created_at: now,
+      updated_at: now,
+    };
+    await putItem('Faculty', faculty);
+    return { id: facultyId, ...faculty, full_name: data.full_name, email: data.email, phone: data.phone, is_active: data.is_active };
+  } catch (err) {
+    console.error('[FacultyService] Error creating faculty:', err);
+    throw err;
   }
-
-  const facultyId = uuidv4();
-  const userId = uuidv4();
-  const now = new Date().toISOString();
-
-  const password_hash = await bcrypt.hash('Password123!', 12);
-  const user = {
-    userId,
-    email: data.email || `faculty_${Date.now()}@campuspulse.edu`,
-    password_hash,
-    role: 'faculty',
-    full_name: data.full_name || 'Unknown Faculty',
-    phone: data.phone || null,
-    is_active: data.is_active !== false,
-    last_login: null,
-    created_at: now,
-    updated_at: now,
-  };
-  await putItem('Users', user);
-
-  const faculty = {
-    facultyId,
-    user_id: userId,
-    department_id: data.department_id || 'd0000000-0000-0000-0000-000000000001',
-    employee_id: data.employee_id,
-    designation: data.designation,
-    department: data.department || null,
-    created_at: now,
-    updated_at: now,
-  };
-  await putItem('Faculty', faculty);
-  return { id: facultyId, ...faculty, full_name: data.full_name, email: data.email, phone: data.phone, is_active: data.is_active };
 }
 
 async function updateFaculty(id, data) {

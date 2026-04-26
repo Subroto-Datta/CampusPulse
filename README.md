@@ -166,3 +166,23 @@ The legacy SQL schema is preserved at [database/schema.sql](database/schema.sql)
 ## License
 
 MIT
+
+---
+
+## 🚀 Vercel + Supabase Deployment Guide
+
+The project is now optimized for a high-performance **Vercel** (Frontend/API) + **Supabase** (PostgreSQL) hybrid stack.
+   ```
+
+### 2. Vercel Deployment
+1. Import your repository into [Vercel](https://vercel.com).
+2. Set these Environment Variables:
+   - `DB_TYPE` = `supabase`
+   - `SUPABASE_URL` = (Your Supabase URL)
+   - `SUPABASE_ANON_KEY` = (Your Supabase Anon Key)
+   - `SUPABASE_SERVICE_ROLE_KEY` = (Your Supabase Service Key)
+   - `JWT_SECRET` = (Any random string)
+   - `CORS_ORIGIN` = `*`
+3. Click **Deploy**.
+
+For detailed instructions, see [DEPLOYMENT_GUIDE_VERCEL.md](DEPLOYMENT_GUIDE_VERCEL.md).

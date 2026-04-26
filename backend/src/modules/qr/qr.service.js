@@ -10,40 +10,51 @@ function hashToken(token) {
 }
 
 async function generateQrToken(userId) {
-  const rawToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = hashToken(rawToken);
-  const expiresAt = new Date(Date.now() + 45_000);
+  try {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + 45_000);
 
-  if (isMock()) {
-    const mock = getMock();
-    const student = mock.store.students.find(s => s.user_id === userId);
-    if (!student) throw new AppError('Student record not found', 404);
-    mock.store.qr_tokens.push({ id: mock.uuid(), student_id: student.id, token: hashedToken, is_used: false, expires_at: expiresAt.toISOString(), used_at: null });
+    if (isMock()) {
+      const mock = getMock();
+      const student = mock.store.students.find(s => s.user_id === userId);
+      if (!student) throw new AppError('Student record not found', 404);
+      mock.store.qr_tokens.push({ id: mock.uuid(), student_id: student.id, token: hashedToken, is_used: false, expires_at: expiresAt.toISOString(), used_at: null });
+      return { token: rawToken, expires_at: expiresAt, gr_number: student.gr_number };
+    }
+
+    // Look up student by user_id
+    console.log(`[QRService] Looking up student for user_id: ${userId}`);
+    const students = await queryItems('Students', {
+      IndexName: 'UserIdIndex',
+      KeyConditionExpression: 'user_id = :uid',
+      ExpressionAttributeValues: { ':uid': userId },
+      Limit: 1,
+    });
+    
+    if (!students.length) {
+      console.warn(`[QRService] No student record found for user_id: ${userId}`);
+      throw new AppError('Student record not found', 404);
+    }
+    const student = students[0];
+    console.log('[QRService] Found student:', student);
+
+    const tokenId = uuidv4();
+    await putItem('QrTokens', {
+      tokenId,
+      student_id: student.studentId || student.id,
+      token: hashedToken,
+      is_used: false,
+      expires_at: expiresAt.toISOString(),
+      used_at: null,
+      created_at: new Date().toISOString(),
+    });
+
     return { token: rawToken, expires_at: expiresAt, gr_number: student.gr_number };
+  } catch (err) {
+    console.error('[QRService] Error generating QR token:', err);
+    throw err;
   }
-
-  // Look up student by user_id
-  const students = await queryItems('Students', {
-    IndexName: 'UserIdIndex',
-    KeyConditionExpression: 'user_id = :uid',
-    ExpressionAttributeValues: { ':uid': userId },
-    Limit: 1,
-  });
-  if (!students.length) throw new AppError('Student record not found', 404);
-  const student = students[0];
-
-  const tokenId = uuidv4();
-  await putItem('QrTokens', {
-    tokenId,
-    student_id: student.studentId,
-    token: hashedToken,
-    is_used: false,
-    expires_at: expiresAt.toISOString(),
-    used_at: null,
-    created_at: new Date().toISOString(),
-  });
-
-  return { token: rawToken, expires_at: expiresAt, gr_number: student.gr_number };
 }
 
 async function validateQrToken(token) {

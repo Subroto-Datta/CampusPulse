@@ -2,7 +2,8 @@ const { createClient } = require('@supabase/supabase-js');
 const env = require('./env');
 
 const supabaseUrl = env.supabase.url;
-const supabaseKey = env.supabase.serviceRoleKey || env.supabase.anonKey;
+// Use anonKey as primary because the provided serviceRoleKey was invalid
+const supabaseKey = env.supabase.anonKey || env.supabase.serviceRoleKey;
 
 if (!supabaseUrl || !supabaseKey) {
   console.warn('Supabase credentials missing. Supabase integration will be disabled.');

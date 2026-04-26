@@ -1,0 +1,7 @@
+"userId","created_at","email","full_name","is_active","last_login","password_hash","phone","role","updated_at"
+"182e08eb-893a-4535-b836-a097fbb0b857","2026-04-26T14:26:09.353Z","guard@campuspulse.edu","Guard User","true","null","$2b$12$ksb/9fnOeqTkd/lZwnVAWuC7Kb.L05qvtaemBMi9Uw4UZ7LrMHgga","null","guard","2026-04-26T14:26:09.353Z"
+"5568ec16-42ce-47fb-bd2d-7d0b078d61f5","2026-04-26T14:26:09.353Z","student@campuspulse.edu","Student User","true","null","$2b$12$ksb/9fnOeqTkd/lZwnVAWuC7Kb.L05qvtaemBMi9Uw4UZ7LrMHgga","null","student","2026-04-26T14:26:09.353Z"
+"a987313a-fd52-4861-87bc-60bab7e79f39","2026-04-26T14:26:09.353Z","admin@campuspulse.edu","Admin User","true","2026-04-26T17:47:18.064Z","$2b$12$ksb/9fnOeqTkd/lZwnVAWuC7Kb.L05qvtaemBMi9Uw4UZ7LrMHgga","null","admin","2026-04-26T17:47:18.064Z"
+"e41693f6-9728-4118-851f-4f78ced3b4aa","2026-04-26T16:03:49.320Z","aarya.bhansali@somaiya.edu","Aarya Bhansali","true","null","$2a$12$AsJRmLg6suR.jgO/QH0xn.jkj4d9m1tz4.1Cdip.WpIl/LrBfYhHu","null","student","2026-04-26T16:03:49.320Z"
+"8c93ee7d-01b2-4128-aafc-393c898ed03c","2026-04-26T15:22:09.613Z","subroto.d@somaiya.edu","Subroto Datta","true","null","$2a$12$uX3am3YclbEI7ZEDAXodeODVKgOfOa7Jkp.g9VqTIqkWFvVVixbSq","null","student","2026-04-26T15:22:09.613Z"
+"85fa0fc5-e81f-435a-a162-626aa74ad49b","2026-04-26T14:26:09.353Z","faculty@campuspulse.edu","Faculty User","true","null","$2b$12$ksb/9fnOeqTkd/lZwnVAWuC7Kb.L05qvtaemBMi9Uw4UZ7LrMHgga","null","faculty","2026-04-26T14:26:09.353Z"

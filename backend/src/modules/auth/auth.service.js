@@ -50,6 +50,7 @@ async function register({ email, password, role, full_name, phone }) {
 }
 
 async function login({ email, password }) {
+  email = (email || '').trim().toLowerCase();
   if (isMock()) {
     const mock = getMock();
     const user = mock.store.users.find(u => u.email === email);
@@ -69,10 +70,12 @@ async function login({ email, password }) {
     ExpressionAttributeValues: { ':email': email },
     Limit: 1,
   });
+  console.log('[AuthService] Lookup result for:', email, users.length ? 'Found' : 'Not Found');
   if (!users.length) throw new AppError('Invalid email or password', 401);
   const user = users[0];
   if (!user.is_active) throw new AppError('Account is deactivated', 403);
   const valid = await bcrypt.compare(password, user.password_hash);
+  console.log('[AuthService] Password validation:', valid ? 'Passed' : 'Failed');
   if (!valid) throw new AppError('Invalid email or password', 401);
 
   // Update last_login
