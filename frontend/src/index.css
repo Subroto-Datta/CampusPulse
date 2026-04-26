@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-text selection:bg-primary/30 selection:text-white;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.surface.border') transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-border rounded-full;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-surface/50 backdrop-blur-xl border border-surface-border/50 rounded-2xl shadow-xl;
+  }
+
+  .input-base, .input-field {
+    @apply w-full bg-surface border border-surface-border rounded-xl px-4 py-2.5 text-text placeholder-text-muted/50 
+           focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply relative inline-flex items-center justify-center px-6 py-2.5 font-medium text-white 
+           bg-primary rounded-xl overflow-hidden transition-all duration-300
+           hover:bg-primary-hover hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]
+           active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-secondary {
+    @apply relative inline-flex items-center justify-center px-6 py-2.5 font-medium text-text 
+           bg-surface border border-surface-border rounded-xl transition-all duration-300
+           hover:bg-surface-hover active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "campuspulse-api",
+  "version": "1.0.0",
+  "description": "CampusPulse Backend API — Smart Hybrid Attendance & Entry Management",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "migrate": "node src/db/migrate.js",
+    "seed": "node src/db/seed.js",
+    "package": "powershell -Command \"Compress-Archive -Path src, lambda.js, package.json, package-lock.json, node_modules -DestinationPath deploy.zip -Force\"",
+    "build": "npm ci --production && npm run package"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1037.0",
+    "@aws-sdk/client-textract": "^3.1037.0",
+    "@aws-sdk/lib-dynamodb": "^3.1037.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "crypto-random-string": "^3.3.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^2.1.1",
+    "serverless-http": "^3.2.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
