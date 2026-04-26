@@ -112,12 +112,14 @@ export default function GateLogs() {
                   </motion.tr>
                 ) : logs.length === 0 ? (
                   <motion.tr key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <td colSpan="4" className="px-6 py-16 text-center">
-                      <ShieldCheck className="w-12 h-12 text-surface-border mx-auto mb-3" />
-                      <p className="text-text font-medium">No records found</p>
-                      <p className="text-text-muted text-sm mt-1">Try adjusting your filters.</p>
-                    </td>
-                  </motion.tr>
+                  <td colSpan="4" className="text-center py-16">
+                    <div className="w-16 h-16 rounded-2xl bg-surface border border-surface-border flex items-center justify-center mx-auto mb-4">
+                      <Clock className="w-8 h-8 text-text-muted" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-text mb-1">No gate logs found</h3>
+                    <p className="text-text-muted text-sm">No physical entry records match the current filters.</p>
+                  </td>
+                </motion.tr>
                 ) : (
                   logs.map((log, idx) => (
                     <motion.tr 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import api from '../services/api';
-import { HiOutlineSearch, HiOutlineAcademicCap, HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiFilter } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineAcademicCap, HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiFilter, HiX } from 'react-icons/hi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Faculties() {
@@ -127,8 +127,13 @@ export default function Faculties() {
             placeholder="Search by name or email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-field pl-12 w-full"
+            className="input-field pl-12 pr-10 w-full"
           />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors">
+              <HiX className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <button 
           onClick={() => setShowFilters(!showFilters)} 
@@ -196,9 +201,13 @@ export default function Faculties() {
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-12">
-                    <HiOutlineAcademicCap className="w-12 h-12 text-gray-600 mx-auto mb-2" />
-                    <p className="text-gray-500">No faculty members match your criteria</p>
+                  <td colSpan="6" className="text-center py-16">
+                    <div className="w-16 h-16 rounded-2xl bg-surface border border-surface-border flex items-center justify-center mx-auto mb-4">
+                      <HiOutlineAcademicCap className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-1">No faculty members found</h3>
+                    <p className="text-gray-400 text-sm mb-4">Get started by adding a new faculty member to the system.</p>
+                    <button onClick={handleAddNew} className="btn-secondary text-sm">Add First Faculty</button>
                   </td>
                 </tr>
               ) : (
@@ -233,10 +242,10 @@ export default function Faculties() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <button onClick={() => handleEdit(f)} className="text-blue-400 hover:text-blue-300 transition-colors" title="Edit">
+                        <button onClick={() => handleEdit(f)} className="p-2 rounded-lg text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors" title="Edit">
                           <HiOutlinePencil className="w-5 h-5" />
                         </button>
-                        <button onClick={() => handleDelete(f.id)} className="text-danger-400 hover:text-danger-300 transition-colors" title="Delete">
+                        <button onClick={() => handleDelete(f.id)} className="p-2 rounded-lg text-danger-400 hover:text-danger-300 hover:bg-danger-500/10 transition-colors" title="Delete">
                           <HiOutlineTrash className="w-5 h-5" />
                         </button>
                       </div>
@@ -270,35 +279,35 @@ export default function Faculties() {
                 <h2 className="text-2xl font-bold text-white mb-2">
                   {editingFaculty ? 'Edit Faculty' : 'Add New Faculty'}
                 </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Full Name</label>
-                  <input required type="text" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} className="input-field" />
+                  <label className="block text-sm font-medium text-gray-400 mb-1.5">Full Name</label>
+                  <input required type="text" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} className="input-field" placeholder="Dr. Jane Smith" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Email</label>
-                  <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="input-field" />
+                  <label className="block text-sm font-medium text-gray-400 mb-1.5">Email</label>
+                  <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="input-field" placeholder="jane@campuspulse.edu" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Department</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1.5">Department</label>
                   <input type="text" placeholder="e.g. Computer Science" value={formData.department} onChange={e => setFormData({...formData, department: e.target.value})} className="input-field" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Year</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1.5">Year</label>
                   <input type="text" placeholder="e.g. 2nd Year" value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} className="input-field" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Division</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1.5">Division</label>
                   <input type="text" placeholder="e.g. A" value={formData.division} onChange={e => setFormData({...formData, division: e.target.value})} className="input-field" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Subject</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1.5">Subject</label>
                   <input type="text" placeholder="e.g. Data Structures" value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="input-field" />
                 </div>
                 <div className="flex items-center mt-2 sm:col-span-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="rounded bg-surface border-white/20 text-primary" />
-                    <span className="text-sm text-gray-300">Active Faculty</span>
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="w-5 h-5 rounded border-surface-border bg-surface text-primary focus:ring-primary focus:ring-offset-background transition-colors cursor-pointer" />
+                    <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">Active Faculty</span>
                   </label>
                 </div>
               </div>

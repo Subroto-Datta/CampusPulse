@@ -140,10 +140,15 @@ export default function RfidMapping() {
                   <div className="w-8 h-8 border-3 border-accent-500 border-t-transparent rounded-full animate-spin mx-auto" />
                 </td></tr>
               ) : mappings.length === 0 ? (
-                <tr><td colSpan="6" className="text-center py-12">
-                  <HiOutlineFingerPrint className="w-12 h-12 text-gray-600 mx-auto mb-2" />
-                  <p className="text-gray-500">No RFID cards mapped</p>
-                </td></tr>
+                <tr>
+                  <td colSpan="6" className="text-center py-16">
+                    <div className="w-16 h-16 rounded-2xl bg-surface border border-surface-border flex items-center justify-center mx-auto mb-4">
+                      <HiOutlineFingerPrint className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-1">No RFID cards mapped</h3>
+                    <p className="text-gray-400 text-sm">Map an RFID card to a student to start tracking attendance.</p>
+                  </td>
+                </tr>
               ) : (
                 mappings.map((m) => {
                   const isVisible = visibleUids.has(m.id);
@@ -165,7 +170,7 @@ export default function RfidMapping() {
                       <td className="px-6 py-4 text-gray-500 text-xs">{new Date(m.issued_at).toLocaleDateString()}</td>
                       <td className="px-6 py-4">
                         {m.is_active && (
-                          <button onClick={() => handleRevoke(m.id)} className="text-danger-400 hover:text-danger-300 transition-colors" title="Revoke">
+                          <button onClick={() => handleRevoke(m.id)} className="p-2 rounded-lg text-danger-400 hover:text-danger-300 hover:bg-danger-500/10 transition-colors" title="Revoke">
                             <HiOutlineBan className="w-5 h-5" />
                           </button>
                         )}

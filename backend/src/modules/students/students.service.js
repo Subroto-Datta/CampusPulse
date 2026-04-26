@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcryptjs');
 const { getItem, putItem, updateItem, deleteItem, queryItems, scanItems, isMock } = require('../../config/db');
 const AppError = require('../../utils/AppError');
 
@@ -139,25 +140,49 @@ async function createStudent(data) {
   if (isMock()) {
     const mock = getMock();
     const newId = mock.uuid();
-    mock.store.students.push({ id: newId, ...data });
+    const userId = mock.uuid();
+    mock.store.users.push({
+      id: userId, email: data.email || `s${Date.now()}@campuspulse.edu`, role: 'student',
+      full_name: data.full_name, is_active: data.is_active !== false, password_hash: 'hash'
+    });
+    mock.store.students.push({ id: newId, user_id: userId, ...data });
     return { id: newId, ...data };
   }
 
   const studentId = uuidv4();
+  const userId = uuidv4();
   const now = new Date().toISOString();
+
+  // Create User first
+  const password_hash = await bcrypt.hash('Password123!', 12);
+  const user = {
+    userId,
+    email: data.email || `student_${Date.now()}@campuspulse.edu`,
+    password_hash,
+    role: 'student',
+    full_name: data.full_name || 'Unknown Student',
+    phone: null,
+    is_active: data.is_active !== false,
+    last_login: null,
+    created_at: now,
+    updated_at: now,
+  };
+  await putItem('Users', user);
+
+  // Create Student
   const student = {
     studentId,
-    user_id: data.user_id,
-    department_id: data.department_id,
+    user_id: userId,
+    department_id: data.department_id || 'd0000000-0000-0000-0000-000000000001',
     gr_number: data.gr_number,
     roll_number: data.roll_number,
     division: data.division,
-    semester: data.semester,
+    semester: data.semester || 1,
     created_at: now,
     updated_at: now,
   };
   await putItem('Students', student);
-  return { id: studentId, ...student };
+  return { id: studentId, ...student, full_name: data.full_name, email: data.email };
 }
 
 async function updateStudent(id, data) {
@@ -166,17 +191,69 @@ async function updateStudent(id, data) {
     const idx = mock.store.students.findIndex(s => s.id === id);
     if (idx === -1) throw new AppError('Not found', 404);
     mock.store.students[idx] = { ...mock.store.students[idx], ...data };
+    const uIdx = mock.store.users.findIndex(u => u.id === mock.store.students[idx].user_id);
+    if (uIdx !== -1) {
+      if (data.full_name) mock.store.users[uIdx].full_name = data.full_name;
+      if (data.email) mock.store.users[uIdx].email = data.email;
+      if (data.is_active !== undefined) mock.store.users[uIdx].is_active = data.is_active;
+    }
     return mock.store.students[idx];
   }
 
   const existing = await getItem('Students', { studentId: id });
   if (!existing) throw new AppError('Student not found', 404);
 
+  // Update User if needed
+  if (data.full_name || data.email || data.is_active !== undefined) {
+    const userUpdates = [];
+    const userValues = { ':now': new Date().toISOString() };
+    const userNames = {};
+    let uIdx = 0;
+    
+    if (data.full_name) {
+      userNames[`#uk${uIdx}`] = 'full_name';
+      userValues[`:uval${uIdx}`] = data.full_name;
+      userUpdates.push(`#uk${uIdx} = :uval${uIdx}`);
+      uIdx++;
+    }
+    if (data.email) {
+      userNames[`#uk${uIdx}`] = 'email';
+      userValues[`:uval${uIdx}`] = data.email;
+      userUpdates.push(`#uk${uIdx} = :uval${uIdx}`);
+      uIdx++;
+    }
+    if (data.is_active !== undefined) {
+      userNames[`#uk${uIdx}`] = 'is_active';
+      userValues[`:uval${uIdx}`] = data.is_active;
+      userUpdates.push(`#uk${uIdx} = :uval${uIdx}`);
+      uIdx++;
+    }
+    
+    if (userUpdates.length > 0) {
+      userUpdates.push('updated_at = :now');
+      await updateItem('Users', { userId: existing.user_id },
+        `SET ${userUpdates.join(', ')}`,
+        userValues,
+        Object.keys(userNames).length ? userNames : undefined
+      );
+    }
+  }
+
+  // Update Student
+  const studentData = { ...data };
+  delete studentData.full_name;
+  delete studentData.email;
+  delete studentData.is_active;
+
+  if (Object.keys(studentData).length === 0) {
+    return { id, ...existing, ...data };
+  }
+
   const updateParts = [];
   const exprValues = { ':now': new Date().toISOString() };
   const exprNames = {};
   let idx = 0;
-  for (const [key, val] of Object.entries(data)) {
+  for (const [key, val] of Object.entries(studentData)) {
     const placeholder = `:val${idx}`;
     const nameKey = `#k${idx}`;
     exprNames[nameKey] = key;
@@ -191,7 +268,7 @@ async function updateStudent(id, data) {
     exprValues,
     Object.keys(exprNames).length ? exprNames : undefined
   );
-  return { id, ...updated };
+  return { id, ...updated, ...data };
 }
 
 async function deleteStudent(id) {

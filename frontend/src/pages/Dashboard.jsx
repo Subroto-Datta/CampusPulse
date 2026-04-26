@@ -79,7 +79,7 @@ export default function Dashboard() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-semibold text-text tracking-tight">
-          Welcome back, <span className="text-primary">{user?.full_name?.split(' ')[0]}</span>
+          Welcome back, <span className="text-primary">{user?.full_name?.replace(/^(Dr\.|Prof\.)\s+/, '').split(' ')[0]}</span>
         </h1>
         <p className="text-text-muted mt-1.5 text-sm">
           {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -88,25 +88,36 @@ export default function Dashboard() {
 
       {/* Admin Stats */}
       {user?.role === 'admin' && stats && (
-        <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {Object.entries(stats).map(([key, value]) => {
-            const Icon = STAT_ICONS[key] || Users;
-            return (
-              <motion.div key={key} variants={item} whileHover={{ y: -4 }} className="glass-panel p-6 group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-surface flex items-center justify-center border border-surface-border group-hover:border-primary/50 group-hover:text-primary transition-colors">
-                    <Icon className="w-5 h-5" />
+        <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+          {stats.today_entries === 0 && stats.today_attendance_pct === 0 && stats.late_entries === 0 && (
+            <motion.div variants={item} className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-4 text-blue-400">
+              <ShieldCheck className="w-6 h-6 shrink-0" />
+              <div>
+                <h3 className="font-medium text-sm">System Ready</h3>
+                <p className="text-xs opacity-80">Waiting for today's first gate entry or attendance record...</p>
+              </div>
+            </motion.div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Object.entries(stats).map(([key, value]) => {
+              const Icon = STAT_ICONS[key] || Users;
+              return (
+                <motion.div key={key} variants={item} whileHover={{ y: -4 }} className="glass-panel p-6 group">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-surface flex items-center justify-center border border-surface-border group-hover:border-primary/50 group-hover:text-primary transition-colors">
+                      <Icon className="w-5 h-5" />
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <h3 className="text-3xl font-bold text-text mb-1 tracking-tight">
-                    {key === 'today_attendance_pct' ? `${value}%` : value}
-                  </h3>
-                  <p className="text-sm font-medium text-text-muted">{STAT_LABELS[key] || key}</p>
-                </div>
-              </motion.div>
-            );
-          })}
+                  <div>
+                    <h3 className="text-3xl font-bold text-text mb-1 tracking-tight">
+                      {key === 'today_attendance_pct' ? `${value}%` : value}
+                    </h3>
+                    <p className="text-sm font-medium text-text-muted">{STAT_LABELS[key] || key}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
         </motion.div>
       )}
 

@@ -93,10 +93,18 @@ export default function ScanQr() {
                 <Camera className="w-10 h-10 text-text-muted opacity-50" />
               </div>
               <p className="text-text font-medium mb-2">Ready to Scan</p>
-              <p className="text-sm text-text-muted mb-8">Point the camera at a student&apos;s active QR token.</p>
-              <button onClick={startScanner} className="btn-primary w-full">
-                Activate Camera
-              </button>
+              <p className="text-sm text-text-muted mb-8">Point the camera at a student's active QR token.</p>
+              <div className="w-full space-y-3">
+                <button onClick={startScanner} className="btn-primary w-full">
+                  Activate Camera
+                </button>
+                <button onClick={() => {
+                  const token = prompt('Enter manual token string:');
+                  if (token) validateToken(token);
+                }} className="btn-secondary w-full text-sm">
+                  Enter Token Manually
+                </button>
+              </div>
             </motion.div>
           )}
 
