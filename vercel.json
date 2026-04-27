@@ -7,19 +7,24 @@
       "config": { "distDir": "dist" }
     },
     {
-      "src": "backend/src/app.js",
+      "src": "backend/src/server.js",
       "use": "@vercel/node"
     }
   ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "backend/src/app.js"
+      "destination": "backend/src/server.js"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|assets/|favicon.ico|.*\\..*).*)",
       "destination": "frontend/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "frontend/$1"
     }
   ]
 }
+
 
