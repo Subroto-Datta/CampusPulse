@@ -1,188 +1,171 @@
-# CampusPulse 🏫
+# CampusPulse
 
-> Smart Hybrid Attendance and Entry Management System for colleges.
+Smart hybrid attendance and campus entry management for colleges.
 
-RFID gate entry • QR guardrail • Faculty attendance marking • Automated resolution engine • Analytics & reports
+CampusPulse combines RFID gate entry, QR fallback entry, faculty attendance workflows, and reporting into one role-based web platform.
+
+## Core Features
+
+- Role-based dashboards for admin, faculty, student, and guard users
+- RFID gate entry logging with duplicate-scan protection
+- Time-limited QR entry flow for fallback access
+- Faculty session and attendance marking workflow
+- Attendance resolution and alerting logic
+- CSV exports and analytics-focused reports
 
 ## Tech Stack
 
-| Layer      | Technology                          | Deploy Target          |
-|------------|-------------------------------------|------------------------|
-| Frontend   | React 18 + Vite 5 + Tailwind CSS 3 | AWS Amplify            |
-| Backend    | Node.js + Express 4                | AWS Lambda + API GW    |
-| Database   | DynamoDB (NoSQL, on-demand)        | AWS DynamoDB           |
-| Storage    | File uploads                        | AWS S3                 |
-| Auth       | JWT (Cognito-ready structure)       | —                      |
+| Layer | Technology | Notes |
+| --- | --- | --- |
+| Frontend | React 18, Vite 5, Tailwind CSS 3 | Single-page app with protected routes |
+| Backend | Node.js, Express 4 | Modular REST API |
+| Database | DynamoDB or Supabase PostgreSQL | Switchable via environment variables |
+| Auth | JWT | Token-based API auth |
+| Deployment | AWS (Amplify/Lambda/API GW) or Vercel | Dual deployment paths supported |
 
-## Features
+## Repository Structure
 
-### 🔐 Role-Based Access
-- **Admin** — Full dashboard, student management, RFID mapping, reports, alerts
-- **Faculty** — Session management, attendance marking, attendance analytics
-- **Student** — QR entry generation, attendance history
-- **Guard** — QR scanner, gate log viewer
-
-### 📡 RFID Gate Entry
-- Hardware RFID scanner → `POST /api/entry/rfid`
-- Auto-maps RFID UID to student
-- Rejects duplicate scans within 5 minutes
-- Logs all gate entries
-
-### 📱 QR Guardrail Entry
-- Student generates single-use QR (45s expiry)
-- Guard scans with camera → validates → logs entry
-- Fallback when ID card forgotten
-
-### 📋 Faculty Attendance
-- View today's lectures
-- Default: all present — click to mark absent
-- Search by name/roll
-- Mobile-responsive grid UI
-
-### 🧠 Attendance Resolution Engine
-- Cross-references gate logs with attendance marks
-- Auto-flags: entered-but-absent, present-without-gate-log
-- Detects repeated late arrivals, below 75% attendance
-- Generates actionable alerts
-
-### 📊 Reports & Analytics
-- Daily attendance trends (line chart)
-- Subject-wise attendance (bar chart)
-- Low attendance students list
-- Bunk suspects report
-- Late arrivals tracker
-- CSV export on all reports
-
-## Project Structure
-
-```
+```text
 CampusPulse/
-├── frontend/                 # React + Vite + Tailwind
-│   ├── src/
-│   │   ├── components/       # Layout (Sidebar, DashboardLayout), Common (ProtectedRoute)
-│   │   ├── context/          # AuthContext
-│   │   ├── pages/            # All page components
-│   │   └── services/         # Axios API client
-│   └── ...config files
-├── backend/                  # Node.js + Express
-│   ├── src/
-│   │   ├── config/           # env.js, db.js
-│   │   ├── middleware/       # auth, errorHandler, validate
-│   │   ├── modules/          # auth, entry, qr, faculty, attendance, admin, students, reports, health
-│   │   ├── utils/            # ApiResponse, AppError
-│   │   └── db/               # migrate.js, seed.js, migrations/
-│   └── lambda.js             # AWS Lambda entry point
-├── database/                 # SQL schema + seed data
-├── docs/                     # Deployment guide, API reference
-└── .gitignore
+  frontend/            # React app
+  backend/             # Express API + Lambda entry
+  database/            # SQL schema and seed reference
+  docs/                # API and deployment docs
+  DEPLOYMENT_GUIDE_VERCEL.md
+  vercel.json
+  amplify.yml
 ```
 
-## Quick Start
+## Quick Start (Local Development)
 
 ### Prerequisites
+
 - Node.js 20+
 - npm
 
-### 1. Clone & Install
+### 1. Install Dependencies
 
 ```bash
-# Frontend
 cd frontend
 npm install
 
-# Backend
 cd ../backend
 npm install
 ```
 
-### 2. Database Setup
+### 2. Configure Environment
+
+Create backend env file from template:
 
 ```bash
-# Configure environment
 cp backend/.env.example backend/.env
-# Edit .env — set DB_MOCK=true for local dev (no AWS needed)
+```
 
-# Run migrations (only when targeting real DynamoDB)
+Recommended local mode:
+
+- Set `DB_MOCK=true` in `backend/.env` for in-memory local data (no AWS required)
+- Keep frontend `VITE_API_URL=/api` (default) for local proxy-based API access
+
+Frontend env template:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+### 3. Run the App
+
+```bash
+# Terminal 1
+cd backend
+npm run dev
+
+# Terminal 2
+cd frontend
+npm run dev
+```
+
+Local URLs:
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:4000
+
+## Optional Data Setup
+
+Run these when using real DynamoDB tables:
+
+```bash
 cd backend
 npm run migrate
-
-# Seed demo data (only when targeting real DynamoDB)
 npm run seed
 ```
 
-> **Tip**: Set `DB_MOCK=true` in `.env` to run locally with an in-memory mock database — no AWS account required.
+Demo credentials (after seed):
 
-### 3. Run Locally
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | admin@campuspulse.edu | Password123! |
+| Faculty | faculty1@campuspulse.edu | Password123! |
+| Student | student1@campuspulse.edu | Password123! |
+| Guard | guard@campuspulse.edu | Password123! |
 
-```bash
-# Terminal 1 — Backend
-cd backend
-npm run dev
-# → http://localhost:4000
+## Backend Scripts
 
-# Terminal 2 — Frontend
-cd frontend
-npm run dev
-# → http://localhost:5173
-```
+From `backend/`:
 
-### 4. Login
+- `npm run dev` - Run API in watch mode
+- `npm start` - Run API in production mode
+- `npm run migrate` - Create/update DynamoDB tables
+- `npm run seed` - Seed demo data
+- `npm run package` - Create Lambda zip package
+- `npm run build` - Install production deps and package for Lambda
 
-Demo credentials (after seeding):
-| Role    | Email                       | Password      |
-|---------|-----------------------------|---------------|
-| Admin   | admin@campuspulse.edu       | Password123!  |
-| Faculty | faculty1@campuspulse.edu    | Password123!  |
-| Student | student1@campuspulse.edu    | Password123!  |
-| Guard   | guard@campuspulse.edu       | Password123!  |
+## Frontend Scripts
 
-## API Endpoints
+From `frontend/`:
 
-See [docs/API_REFERENCE.md](docs/API_REFERENCE.md) for complete API documentation.
+- `npm run dev` - Start Vite dev server
+- `npm run build` - Build production bundle
+- `npm run preview` - Preview production build locally
+- `npm run lint` - Run ESLint checks
 
-### Key endpoints:
-- `GET  /api/health` — Health check
-- `POST /api/auth/login` — Login
-- `POST /api/entry/rfid` — RFID gate scan
-- `GET  /api/qr/generate` — Generate QR token (student)
-- `POST /api/qr/validate` — Validate QR (guard)
-- `GET  /api/faculty/today-sessions` — Faculty lectures
-- `POST /api/faculty/attendance/submit` — Submit attendance
-- `GET  /api/admin/dashboard` — Admin stats
-- `GET  /api/reports/*` — Analytics endpoints
+## API Overview
 
-## AWS Deployment
+Key endpoints:
 
-See [docs/AWS_DEPLOYMENT.md](docs/AWS_DEPLOYMENT.md) for complete deployment instructions.
+- `GET /api/health` - Health check
+- `POST /api/auth/login` - Login
+- `GET /api/auth/me` - Current user profile
+- `POST /api/entry/rfid` - RFID gate scan
+- `GET /api/qr/generate` - Generate student QR token
+- `POST /api/qr/validate` - Validate scanned QR token
+- `GET /api/faculty/today-sessions` - Faculty lecture list
+- `POST /api/faculty/attendance/submit` - Submit attendance
+- `GET /api/admin/dashboard` - Admin summary
+- `GET /api/reports/*` - Reporting endpoints
 
-## Database Schema
+Full API reference: [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
 
-13 DynamoDB tables with Global Secondary Indexes (GSIs):
-`Users`, `Students`, `Faculty`, `Departments`, `Courses`, `Enrollments`, `RfidCards`, `GateLogs`, `LectureSessions`, `AttendanceRecords`, `QrTokens`, `Alerts`, `AuditLogs`
+## Deployment Paths
 
-See [backend/src/db/migrate.js](backend/src/db/migrate.js) for the complete table definitions and GSI configuration.
-The legacy SQL schema is preserved at [database/schema.sql](database/schema.sql) for reference.
+### AWS Deployment
+
+Use this when running DynamoDB + Lambda/API Gateway:
+
+- Guide: [docs/AWS_DEPLOYMENT.md](docs/AWS_DEPLOYMENT.md)
+
+### Vercel + Supabase Deployment
+
+Use this when running serverless API and frontend on Vercel with Supabase:
+
+- Guide: [DEPLOYMENT_GUIDE_VERCEL.md](DEPLOYMENT_GUIDE_VERCEL.md)
+- Ensure `DB_TYPE=supabase` and Supabase keys are configured in Vercel environment variables
+
+## Database Notes
+
+- DynamoDB schema and table/index definitions are implemented in `backend/src/db/migrate.js`
+- SQL schema reference is available in `database/schema.sql`
+- Supabase migration/seed helpers are available under `backend/` SQL files
 
 ## License
 
 MIT
-
----
-
-## 🚀 Vercel + Supabase Deployment Guide
-
-The project is now optimized for a high-performance **Vercel** (Frontend/API) + **Supabase** (PostgreSQL) hybrid stack.
-   ```
-
-### 2. Vercel Deployment
-1. Import your repository into [Vercel](https://vercel.com).
-2. Set these Environment Variables:
-   - `DB_TYPE` = `supabase`
-   - `SUPABASE_URL` = (Your Supabase URL)
-   - `SUPABASE_ANON_KEY` = (Your Supabase Anon Key)
-   - `SUPABASE_SERVICE_ROLE_KEY` = (Your Supabase Service Key)
-   - `JWT_SECRET` = (Any random string)
-   - `CORS_ORIGIN` = `*`
-3. Click **Deploy**.
-
-For detailed instructions, see [DEPLOYMENT_GUIDE_VERCEL.md](DEPLOYMENT_GUIDE_VERCEL.md).
