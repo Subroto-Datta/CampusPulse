@@ -1,171 +1,82 @@
-# CampusPulse
+# 🎓 CampusPulse: Smart Academic Management & IoT Attendance System
 
-Smart hybrid attendance and campus entry management for colleges.
+CampusPulse is a premium, full-stack academic management platform designed to streamline campus operations, course management, and student attendance through a modern web interface and IoT integration.
 
-CampusPulse combines RFID gate entry, QR fallback entry, faculty attendance workflows, and reporting into one role-based web platform.
+---
 
-## Core Features
+## 🚀 Key Features
 
-- Role-based dashboards for admin, faculty, student, and guard users
-- RFID gate entry logging with duplicate-scan protection
-- Time-limited QR entry flow for fallback access
-- Faculty session and attendance marking workflow
-- Attendance resolution and alerting logic
-- CSV exports and analytics-focused reports
+### 🏢 Academic Administration
+- **Course Management (CRUD)**: Manage academic courses, codes, semesters, and departments.
+- **Faculty Management**: Oversee faculty assignments and permissions.
+- **Admin Master View**: Centralized dashboard for admins to monitor all ongoing campus sessions.
 
-## Tech Stack
+### 📝 Advanced Attendance System
+- **Multi-Format Uploads**: Support for **Excel (.xlsx, .xls)**, **CSV**, and **OCR (Image/PDF)** attendance processing.
+- **Preview & Review Workflow**: Intuitive grid preview to audit parsed data before final database submission.
+- **Triple-Lock Verification**: Attendance is strictly cross-checked against **Division, Academic Year, and Roll Number** to ensure zero data corruption.
 
-| Layer | Technology | Notes |
-| --- | --- | --- |
-| Frontend | React 18, Vite 5, Tailwind CSS 3 | Single-page app with protected routes |
-| Backend | Node.js, Express 4 | Modular REST API |
-| Database | DynamoDB or Supabase PostgreSQL | Switchable via environment variables |
-| Auth | JWT | Token-based API auth |
-| Deployment | AWS (Amplify/Lambda/API GW) or Vercel | Dual deployment paths supported |
+### 🔌 IoT RFID Integration
+- **Direct Supabase Logging**: ESP32-based RFID nodes communicate directly with Supabase via custom PL/pgSQL functions.
+- **Real-Time Feed**: Live "Gate Logs" track student movement across campus entrances in real-time.
+- **Offline Reliability**: Integrated RTC (Real-Time Clock) and NTP synchronization for accurate timestamping.
 
-## Repository Structure
+---
 
-```text
+## 🛠️ Technology Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React, Vite, TailwindCSS (for custom UI components) |
+| **Backend** | Node.js, Express, Supabase (PostgreSQL) |
+| **IoT** | ESP32, RFID RC522, Arduino/C++ |
+| **Deployment** | Vercel (Monorepo Infrastructure) |
+| **Database** | Supabase (Row Level Security & Database Functions) |
+
+---
+
+## 📦 Project Structure
+
+```bash
 CampusPulse/
-  frontend/            # React app
-  backend/             # Express API + Lambda entry
-  database/            # SQL schema and seed reference
-  docs/                # API and deployment docs
-  DEPLOYMENT_GUIDE_VERCEL.md
-  vercel.json
-  amplify.yml
+├── frontend/          # React + Vite application
+├── backend/           # Express API + Database Services
+├── iot/               # ESP32 Arduino sketches (RFID Node)
+├── vercel.json        # Deployment configuration
+└── Attendance_Templates/ # Sample CSV/Excel formats
 ```
 
-## Quick Start (Local Development)
+---
 
-### Prerequisites
+## 🏗️ Getting Started
 
-- Node.js 20+
-- npm
+### 1. Prerequisites
+- Node.js (v18+)
+- Supabase Project & URL
+- Vercel CLI (for deployment)
 
-### 1. Install Dependencies
-
-```bash
-cd frontend
-npm install
-
-cd ../backend
-npm install
+### 2. Environment Setup
+Create a `.env` file in the `backend/` directory:
+```env
+SUPABASE_URL=your_project_url
+SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
-### 2. Configure Environment
+### 3. Database Functions
+For IoT support, run the `log_rfid_entry` SQL function provided in the `backend/supabase_schema.sql` within your Supabase SQL Editor.
 
-Create backend env file from template:
+---
 
-```bash
-cp backend/.env.example backend/.env
-```
+## ☁️ Deployment
+This project is configured for **Vercel Monorepo** deployment. Simply push your changes to GitHub and Vercel will handle the rest:
+- **API**: Served via `/api/*`
+- **Static Assets**: Served via root `/`
 
-Recommended local mode:
+---
 
-- Set `DB_MOCK=true` in `backend/.env` for in-memory local data (no AWS required)
-- Keep frontend `VITE_API_URL=/api` (default) for local proxy-based API access
+## 📄 License
+This project is licensed under the MIT License.
 
-Frontend env template:
-
-```bash
-cp frontend/.env.example frontend/.env
-```
-
-### 3. Run the App
-
-```bash
-# Terminal 1
-cd backend
-npm run dev
-
-# Terminal 2
-cd frontend
-npm run dev
-```
-
-Local URLs:
-
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:4000
-
-## Optional Data Setup
-
-Run these when using real DynamoDB tables:
-
-```bash
-cd backend
-npm run migrate
-npm run seed
-```
-
-Demo credentials (after seed):
-
-| Role | Email | Password |
-| --- | --- | --- |
-| Admin | admin@campuspulse.edu | Password123! |
-| Faculty | faculty1@campuspulse.edu | Password123! |
-| Student | student1@campuspulse.edu | Password123! |
-| Guard | guard@campuspulse.edu | Password123! |
-
-## Backend Scripts
-
-From `backend/`:
-
-- `npm run dev` - Run API in watch mode
-- `npm start` - Run API in production mode
-- `npm run migrate` - Create/update DynamoDB tables
-- `npm run seed` - Seed demo data
-- `npm run package` - Create Lambda zip package
-- `npm run build` - Install production deps and package for Lambda
-
-## Frontend Scripts
-
-From `frontend/`:
-
-- `npm run dev` - Start Vite dev server
-- `npm run build` - Build production bundle
-- `npm run preview` - Preview production build locally
-- `npm run lint` - Run ESLint checks
-
-## API Overview
-
-Key endpoints:
-
-- `GET /api/health` - Health check
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Current user profile
-- `POST /api/entry/rfid` - RFID gate scan
-- `GET /api/qr/generate` - Generate student QR token
-- `POST /api/qr/validate` - Validate scanned QR token
-- `GET /api/faculty/today-sessions` - Faculty lecture list
-- `POST /api/faculty/attendance/submit` - Submit attendance
-- `GET /api/admin/dashboard` - Admin summary
-- `GET /api/reports/*` - Reporting endpoints
-
-Full API reference: [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
-
-## Deployment Paths
-
-### AWS Deployment
-
-Use this when running DynamoDB + Lambda/API Gateway:
-
-- Guide: [docs/AWS_DEPLOYMENT.md](docs/AWS_DEPLOYMENT.md)
-
-### Vercel + Supabase Deployment
-
-Use this when running serverless API and frontend on Vercel with Supabase:
-
-- Guide: [DEPLOYMENT_GUIDE_VERCEL.md](DEPLOYMENT_GUIDE_VERCEL.md)
-- Ensure `DB_TYPE=supabase` and Supabase keys are configured in Vercel environment variables
-
-## Database Notes
-
-- DynamoDB schema and table/index definitions are implemented in `backend/src/db/migrate.js`
-- SQL schema reference is available in `database/schema.sql`
-- Supabase migration/seed helpers are available under `backend/` SQL files
-
-## License
-
-MIT
+---
+*Developed with ❤️ as an advanced IoT-integrated Campus solution.*
