@@ -36,4 +36,12 @@ async function lateArrivals(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dailyTrend, subjectWise, lowAttendance, bunkSuspects, lateArrivals };
+async function overallAttendance(req, res, next) {
+  try {
+    const data = await reportsService.overallAttendance();
+    return ApiResponse.success(res, data);
+  } catch (err) { next(err); }
+}
+
+module.exports = { dailyTrend, subjectWise, lowAttendance, bunkSuspects, lateArrivals, overallAttendance };
+

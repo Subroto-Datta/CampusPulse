@@ -18,28 +18,44 @@ async function getTodaySessions(userId) {
       });
   }
 
-  // Find faculty record by user_id
-  const faculties = await queryItems('Faculty', {
-    IndexName: 'UserIdIndex',
-    KeyConditionExpression: 'user_id = :uid',
-    ExpressionAttributeValues: { ':uid': userId },
-    Limit: 1,
-  });
-  if (!faculties.length) return [];
-  const fac = faculties[0];
+  const user = await getItem('Users', { userId });
+  if (!user) return [];
 
   const today = new Date().toISOString().slice(0, 10);
-  // Get today's sessions, filter by faculty
-  const sessions = await queryItems('LectureSessions', {
-    IndexName: 'DateIndex',
-    KeyConditionExpression: 'session_date = :today',
-    FilterExpression: 'faculty_id = :fid',
-    ExpressionAttributeValues: { ':today': today, ':fid': fac.facultyId },
-  });
+  let sessions = [];
+
+  if (user.role === 'admin') {
+    // Admin sees all sessions for today
+    sessions = await queryItems('LectureSessions', {
+      IndexName: 'DateIndex',
+      KeyConditionExpression: 'session_date = :today',
+      ExpressionAttributeValues: { ':today': today },
+    });
+  } else {
+    // Faculty sees only their sessions
+    const faculties = await queryItems('Faculty', {
+      IndexName: 'UserIdIndex',
+      KeyConditionExpression: 'user_id = :uid',
+      ExpressionAttributeValues: { ':uid': userId },
+      Limit: 1,
+    });
+    if (!faculties.length) return [];
+    const fac = faculties[0];
+
+    sessions = await queryItems('LectureSessions', {
+      IndexName: 'DateIndex',
+      KeyConditionExpression: 'session_date = :today',
+      FilterExpression: 'faculty_id = :fid',
+      ExpressionAttributeValues: { ':today': today, ':fid': fac.facultyId },
+    });
+  }
 
   const enriched = [];
   for (const ls of sessions) {
     const course = await getItem('Courses', { courseId: ls.course_id });
+    const faculty = await getItem('Faculty', { facultyId: ls.faculty_id });
+    const facUser = faculty ? await getItem('Users', { userId: faculty.user_id }) : null;
+    
     enriched.push({
       id: ls.sessionId,
       session_date: ls.session_date,
@@ -49,8 +65,10 @@ async function getTodaySessions(userId) {
       is_completed: ls.is_completed,
       course_name: course?.name,
       course_code: course?.code,
+      faculty_name: facUser?.full_name || 'N/A',
     });
   }
+
   enriched.sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
   return enriched;
 }
@@ -88,9 +106,18 @@ async function getSessionStudents(sessionId) {
   });
 
   const studs = [];
+  const course = await getItem('Courses', { courseId: session.course_id });
+  
   for (const e of enrollments) {
     const student = await getItem('Students', { studentId: e.student_id });
-    if (!student || student.division !== session.division) continue;
+    // Strict Cross-Check: Division AND Semester/Year
+    if (!student) continue;
+    if (student.division !== session.division) continue;
+    
+    // Check if student is in the correct semester for this course
+    // If course.semester is 3, student.semester should usually be 3.
+    if (course && student.semester !== course.semester) continue;
+
     const user = await getItem('Users', { userId: student.user_id });
     const ar = attendanceRecords.find(a => a.student_id === student.studentId);
     studs.push({
@@ -98,10 +125,12 @@ async function getSessionStudents(sessionId) {
       gr_number: student.gr_number,
       roll_number: student.roll_number,
       division: student.division,
+      semester: student.semester,
       full_name: user?.full_name,
       attendance_status: ar?.status || null,
     });
   }
+
   studs.sort((a, b) => (a.roll_number || '').localeCompare(b.roll_number || ''));
 
   return {
@@ -160,16 +189,22 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
   const session = await getItem('LectureSessions', { sessionId });
   if (!session) throw new AppError('Session not found or unauthorized', 403);
 
-  // Verify faculty ownership
-  const faculties = await queryItems('Faculty', {
-    IndexName: 'UserIdIndex',
-    KeyConditionExpression: 'user_id = :uid',
-    ExpressionAttributeValues: { ':uid': userId },
-    Limit: 1,
-  });
-  if (!faculties.length || faculties[0].facultyId !== session.faculty_id) {
-    throw new AppError('Session not found or unauthorized', 403);
+  // Verify ownership or Admin role
+  const user = await getItem('Users', { userId });
+  if (!user) throw new AppError('User not found', 401);
+
+  if (user.role !== 'admin') {
+    const faculties = await queryItems('Faculty', {
+      IndexName: 'UserIdIndex',
+      KeyConditionExpression: 'user_id = :uid',
+      ExpressionAttributeValues: { ':uid': userId },
+      Limit: 1,
+    });
+    if (!faculties.length || faculties[0].facultyId !== session.faculty_id) {
+      throw new AppError('Session not found or unauthorized', 403);
+    }
   }
+
 
   // Get enrolled students
   const enrollments = await queryItems('Enrollments', {

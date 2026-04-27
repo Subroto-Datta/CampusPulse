@@ -11,17 +11,21 @@ export default function Sessions() {
   const isAdmin = user?.role === 'admin';
   const [sessions, setSessions] = useState([]);
   const [faculties, setFaculties] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
-  const [formData, setFormData] = useState({ faculty_id: '', course_id: 'c0000000-0000-0000-0000-000000000001', division: 'A', session_date: new Date().toISOString().slice(0, 10), start_time: '10:00', end_time: '11:00' });
+  const [formData, setFormData] = useState({ faculty_id: '', course_id: '', division: 'A', session_date: new Date().toISOString().slice(0, 10), start_time: '10:00', end_time: '11:00' });
   const [formLoading, setFormLoading] = useState(false);
 
   useEffect(() => {
     loadData();
-    if (isAdmin) loadFaculties();
+    if (isAdmin) {
+      loadFaculties();
+      loadCourses();
+    }
   }, [isAdmin]);
 
   const loadData = () => {
@@ -39,6 +43,12 @@ export default function Sessions() {
       .catch(console.error);
   };
 
+  const loadCourses = () => {
+    api.get('/admin/courses')
+      .then(({ data }) => setCourses(data.data || []))
+      .catch(console.error);
+  };
+
   const openModal = (session = null) => {
     if (session) {
       setEditingSession(session.id);
@@ -52,10 +62,18 @@ export default function Sessions() {
       });
     } else {
       setEditingSession(null);
-      setFormData({ faculty_id: faculties[0]?.id || '', course_id: 'c0000000-0000-0000-0000-000000000001', division: 'A', session_date: new Date().toISOString().slice(0, 10), start_time: '10:00', end_time: '11:00' });
+      setFormData({ 
+        faculty_id: faculties[0]?.id || '', 
+        course_id: courses[0]?.id || '', 
+        division: 'A', 
+        session_date: new Date().toISOString().slice(0, 10), 
+        start_time: '10:00', 
+        end_time: '11:00' 
+      });
     }
     setShowModal(true);
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -189,9 +207,13 @@ export default function Sessions() {
                     </select>
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-gray-400 mb-1">Course ID</label>
-                    <input required type="text" value={formData.course_id} onChange={e => setFormData({...formData, course_id: e.target.value})} className="input-field" placeholder="e.g. c0000000..." />
+                    <label className="block text-xs font-medium text-gray-400 mb-1">Select Course</label>
+                    <select required value={formData.course_id} onChange={e => setFormData({...formData, course_id: e.target.value})} className="input-field">
+                      <option value="">Select Course...</option>
+                      {courses.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
+                    </select>
                   </div>
+
                   <div>
                     <label className="block text-xs font-medium text-gray-400 mb-1">Division</label>
                     <input required type="text" value={formData.division} onChange={e => setFormData({...formData, division: e.target.value})} className="input-field" placeholder="e.g. A" />

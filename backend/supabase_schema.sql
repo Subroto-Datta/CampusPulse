@@ -119,6 +119,9 @@ CREATE TABLE IF NOT EXISTS enrollments (
   UNIQUE(student_id, course_id, academic_year)
 );
 
+CREATE INDEX IF NOT EXISTS idx_enrollments_course ON enrollments(course_id);
+
+
 -- ─── RFID CARDS ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS rfid_cards (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -139,8 +142,13 @@ CREATE TABLE IF NOT EXISTS gate_logs (
   scanned_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   gate_name     VARCHAR(50)  DEFAULT 'MAIN',
   raw_payload   JSONB,
+  scan_date     DATE,
   created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_gate_logs_student_time ON gate_logs(student_id, scanned_at DESC);
+CREATE INDEX IF NOT EXISTS idx_gate_logs_scan_date ON gate_logs(scan_date);
+
 
 -- ─── LECTURE SESSIONS ───────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lecture_sessions (
@@ -156,6 +164,10 @@ CREATE TABLE IF NOT EXISTS lecture_sessions (
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_lecture_sessions_date ON lecture_sessions(session_date);
+CREATE INDEX IF NOT EXISTS idx_lecture_sessions_faculty ON lecture_sessions(faculty_id);
+
+
 -- ─── ATTENDANCE RECORDS ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS attendance_records (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -170,6 +182,10 @@ CREATE TABLE IF NOT EXISTS attendance_records (
   updated_at      TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
   UNIQUE(session_id, student_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_attendance_student ON attendance_records(student_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_session ON attendance_records(session_id);
+
 
 -- ─── QR TOKENS ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS qr_tokens (

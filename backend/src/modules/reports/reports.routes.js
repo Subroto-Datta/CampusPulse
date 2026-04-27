@@ -9,5 +9,7 @@ router.get('/subject-wise', authenticate, authorize('admin', 'faculty'), ctrl.su
 router.get('/low-attendance', authenticate, authorize('admin', 'faculty'), ctrl.lowAttendance);
 router.get('/bunk-suspects', authenticate, authorize('admin'), ctrl.bunkSuspects);
 router.get('/late-arrivals', authenticate, authorize('admin', 'faculty'), ctrl.lateArrivals);
+router.get('/overall', authenticate, authorize('admin'), ctrl.overallAttendance);
 
 module.exports = router;
+

@@ -235,4 +235,54 @@ async function lateArrivals(days = 7) {
   return results;
 }
 
-module.exports = { dailyAttendanceTrend, subjectWiseAttendance, lowAttendanceStudents, bunkSuspects, lateArrivals };
+async function overallAttendance() {
+  if (isMock()) {
+    const mock = getMock();
+    return mock.store.students.map(s => {
+      const u = mock.getUser(s.user_id);
+      const total = 27; // 9 sessions per course x 3 courses
+      const present = s.id === 's0000000-0000-0000-0000-000000000003' ? 18 : 24; 
+      return {
+        id: s.id,
+        gr_number: s.gr_number,
+        roll_number: s.roll_number,
+        full_name: u?.full_name,
+        division: s.division,
+        total_sessions: total,
+        present_count: present,
+        attendance_pct: Math.round(present / total * 1000) / 10
+      };
+    });
+  }
+
+  const students = await scanItems('Students');
+  const results = [];
+
+  for (const student of students) {
+    const records = await queryItems('AttendanceRecords', {
+      IndexName: 'StudentIndex',
+      KeyConditionExpression: 'student_id = :sid',
+      ExpressionAttributeValues: { ':sid': student.studentId },
+    });
+
+    const present = records.filter(r => ['PRESENT_CONFIRMED', 'LATE_PRESENT', 'MANUAL_PRESENT'].includes(r.status)).length;
+    const user = await getItem('Users', { userId: student.user_id });
+
+    results.push({
+      id: student.studentId,
+      gr_number: student.gr_number,
+      roll_number: student.roll_number,
+      full_name: user?.full_name || 'N/A',
+      division: student.division,
+      total_sessions: records.length,
+      present_count: present,
+      attendance_pct: records.length > 0 ? Math.round(present / records.length * 1000) / 10 : 0,
+    });
+  }
+
+  results.sort((a, b) => (a.roll_number || '').localeCompare(b.roll_number || ''));
+  return results;
+}
+
+module.exports = { dailyAttendanceTrend, subjectWiseAttendance, lowAttendanceStudents, bunkSuspects, lateArrivals, overallAttendance };
+

@@ -64,4 +64,38 @@ async function deleteSession(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { dashboardStats, gateLogs, mapRfid, getRfidMappings, revokeRfid, listSessions, createSession, updateSession, deleteSession };
+async function listCourses(req, res, next) {
+  try {
+    const data = await adminService.listCourses();
+    return ApiResponse.success(res, data);
+  } catch (err) { next(err); }
+}
+
+async function createCourse(req, res, next) {
+  try {
+    const data = await adminService.createCourse(req.body);
+    return ApiResponse.created(res, data, 'Course created');
+  } catch (err) { next(err); }
+}
+
+async function updateCourse(req, res, next) {
+  try {
+    const data = await adminService.updateCourse(req.params.id, req.body);
+    return ApiResponse.success(res, data, 'Course updated');
+  } catch (err) { next(err); }
+}
+
+async function deleteCourse(req, res, next) {
+  try {
+    await adminService.deleteCourse(req.params.id);
+    return ApiResponse.success(res, null, 'Course deleted');
+  } catch (err) { next(err); }
+}
+
+module.exports = { 
+  dashboardStats, gateLogs, mapRfid, getRfidMappings, revokeRfid, 
+  listSessions, createSession, updateSession, deleteSession, 
+  listCourses, createCourse, updateCourse, deleteCourse 
+};
+
+

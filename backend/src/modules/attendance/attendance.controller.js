@@ -15,14 +15,15 @@ async function getAlerts(req, res, next) {
   } catch (err) { next(err); }
 }
 
-async function uploadOCR(req, res, next) {
+async function uploadAttendance(req, res, next) {
   try {
     if (!req.file) {
       return ApiResponse.error(res, 'No file uploaded', 400);
     }
-    const data = await attendanceService.processOCR(req.params.sessionId, req.file.buffer, req.file.mimetype, req.user.id);
-    return ApiResponse.success(res, data, 'OCR processing complete');
+    const data = await attendanceService.processAttendanceFile(req.params.sessionId, req.file.buffer, req.file.mimetype, req.user.id);
+    return ApiResponse.success(res, data, 'Attendance processing complete');
   } catch (err) { next(err); }
 }
 
-module.exports = { resolveSession, getAlerts, uploadOCR };
+module.exports = { resolveSession, getAlerts, uploadAttendance };
+

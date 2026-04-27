@@ -13,6 +13,8 @@ import GateLogs from './pages/GateLogs';
 import Attendance from './pages/Attendance';
 import Reports from './pages/Reports';
 import Sessions from './pages/Sessions';
+import Courses from './pages/Courses';
+
 import TakeAttendance from './pages/TakeAttendance';
 import QrEntry from './pages/QrEntry';
 import ScanQr from './pages/ScanQr';
@@ -41,6 +43,8 @@ export default function App() {
             <Route path="/faculties" element={<ProtectedRoute roles={['admin']}><Faculties /></ProtectedRoute>} />
             <Route path="/rfid" element={<ProtectedRoute roles={['admin']}><RfidMapping /></ProtectedRoute>} />
             <Route path="/gate-logs" element={<ProtectedRoute roles={['admin', 'guard']}><GateLogs /></ProtectedRoute>} />
+            <Route path="/courses" element={<ProtectedRoute roles={['admin']}><Courses /></ProtectedRoute>} />
+
             <Route path="/attendance" element={<ProtectedRoute roles={['admin', 'faculty']}><Attendance /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute roles={['admin', 'faculty']}><Reports /></ProtectedRoute>} />
 

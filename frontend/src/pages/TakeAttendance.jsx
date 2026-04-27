@@ -108,13 +108,19 @@ export default function TakeAttendance() {
     const formData = new FormData();
     formData.append('document', file);
     try {
-      const { data } = await api.post(`/attendance/upload-ocr/${sessionId}`, formData, {
+      const { data } = await api.post(`/attendance/upload/${sessionId}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setToast(`OCR Success: Marked ${data.data.present_count} present!`);
-      setTimeout(() => navigate('/sessions'), 1500);
+      
+      const payload = data.data;
+      // Update local state with the results from the file
+      setAbsentIds(new Set(payload.absent_student_ids));
+      setToast(`${payload.processed_method} loaded: ${payload.present_student_ids.length} Present, ${payload.absent_student_ids.length} Absent. Review before submitting.`);
+      setTimeout(() => setToast(''), 4000);
+
     } catch (err) {
-      setToast(err.response?.data?.message || 'OCR extraction failed.');
+      setToast(err.response?.data?.message || 'File processing failed.');
+
       setTimeout(() => setToast(''), 3000);
     } finally {
       setOcrLoading(false);
@@ -202,7 +208,9 @@ export default function TakeAttendance() {
         </div>
         
         {/* Hidden File Input */}
-        <input type="file" ref={fileInputRef} hidden onChange={handleOcrUpload} accept="image/*,.pdf" />
+        <input type="file" ref={fileInputRef} hidden onChange={handleOcrUpload} accept="image/*,.pdf,.csv,.xlsx,.xls" />
+
+
         
         <button 
           onClick={() => fileInputRef.current?.click()}

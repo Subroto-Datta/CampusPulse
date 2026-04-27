@@ -6,8 +6,9 @@ import { cn } from '../../utils/cn';
 import {
   LayoutDashboard, Users, UserSquare2, ShieldCheck,
   QrCode, FileText, LogOut, Menu, X, Fingerprint,
-  GraduationCap, ScanLine, Sparkles, ChevronLeft, ChevronRight
+  GraduationCap, ScanLine, Sparkles, ChevronLeft, ChevronRight, BookOpen
 } from 'lucide-react';
+
 
 const roleConfig = {
   admin: {
@@ -20,7 +21,9 @@ const roleConfig = {
       { label: 'RFID Mapping', path: '/rfid', icon: Fingerprint },
       { label: 'Gate Logs', path: '/gate-logs', icon: ShieldCheck },
       { label: 'Sessions', path: '/sessions', icon: GraduationCap },
+      { label: 'Courses', path: '/courses', icon: BookOpen },
       { label: 'Attendance', path: '/attendance', icon: UserSquare2 },
+
       { label: 'Reports', path: '/reports', icon: FileText },
     ],
   },

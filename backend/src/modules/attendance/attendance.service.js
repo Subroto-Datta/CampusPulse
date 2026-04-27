@@ -111,35 +111,50 @@ async function getAlerts({ resolved, limit = 50 }) {
   return enriched;
 }
 
-async function processOCR(sessionId, fileBuffer, mimeType, userId) {
-  // Try using actual AWS Textract if credentials exist
-  let extractedRollNumbers = [];
-  try {
-    if (!process.env.AWS_ACCESS_KEY_ID && !process.env.AWS_ROLE_ARN) {
-      console.warn("No AWS credentials found, using simulated OCR extraction for demo");
-      throw new Error('NO_AWS_CREDS');
-    }
+async function processAttendanceFile(sessionId, fileBuffer, mimeType, userId) {
+  const { queryItems, getItem } = require('../../config/db');
+  const XLSX = require('xlsx');
+  let extractedIds = [];
 
-    const client = new TextractClient({ region: process.env.AWS_REGION || "us-east-1" });
-    const command = new AnalyzeDocumentCommand({
-      Document: { Bytes: fileBuffer },
-      FeatureTypes: ["TABLES"]
+  // 1. Extract IDs based on file type
+  const isExcel = mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+                 mimeType === 'application/vnd.ms-excel';
+  const isCsv = mimeType === 'text/csv';
+
+  if (isExcel || isCsv) {
+    // Parse using SheetJS (XLSX)
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    // Convert sheet to JSON array of arrays
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    
+    rows.forEach(row => {
+      if (Array.isArray(row) && row.length >= 1) {
+        const id = String(row[0]).trim().toUpperCase();
+        const status = String(row[1] || 'P').trim().toUpperCase();
+        if (id && (status === 'P' || status === 'PRESENT' || status === '1' || status === 'TRUE')) {
+          extractedIds.push(id);
+        }
+      }
     });
+  } else {
 
-    const response = await client.send(command);
+    // Treat as image/document for OCR
+    try {
+      if (!process.env.AWS_ACCESS_KEY_ID && !process.env.AWS_ROLE_ARN) {
+        throw new Error('NO_AWS_CREDS');
+      }
+      const client = new TextractClient({ region: process.env.AWS_REGION || "us-east-1" });
+      const command = new AnalyzeDocumentCommand({
+        Document: { Bytes: fileBuffer },
+        FeatureTypes: ["TABLES"]
+      });
+      const response = await client.send(command);
+      const blocks = response.Blocks;
+      const blocksMap = {};
+      blocks.forEach(b => blocksMap[b.Id] = b);
 
-    // Parse Textract Response Blocks for tables
-    const blocks = response.Blocks;
-    const blocksMap = {};
-    blocks.forEach(b => blocksMap[b.Id] = b);
-
-    // Find all cells that contain a 'P' or 'tick' and correspond to a roll number
-    // For simplicity of this implementation, we will scan for WORD blocks
-    // that look like Roll Numbers and check if they have "P" near them in the row.
-    // In a production system, a full table relationship parsing is required.
-    const tableBlocks = blocks.filter(b => b.BlockType === 'TABLE');
-    if (tableBlocks.length > 0) {
-      // Find cells
       const cells = blocks.filter(b => b.BlockType === 'CELL');
       let rowMap = {};
       cells.forEach(c => {
@@ -157,40 +172,51 @@ async function processOCR(sessionId, fileBuffer, mimeType, userId) {
         rowMap[c.RowIndex].push({ col: c.ColumnIndex, text: text.trim().toUpperCase() });
       });
 
-      // Look for rows that have 'P' in some column
       Object.keys(rowMap).forEach(rowIndex => {
         const cols = rowMap[rowIndex];
         const hasPresent = cols.some(c => c.text === 'P' || c.text === 'PRESENT' || c.text === '✓');
         if (hasPresent) {
-          // Attempt to find roll number (usually column 1 or 2)
           const rollCol = cols.find(c => /^[0-9]+$/.test(c.text) || c.text.startsWith('GR'));
-          if (rollCol) extractedRollNumbers.push(rollCol.text);
+          if (rollCol) extractedIds.push(rollCol.text);
         }
       });
+    } catch (err) {
+      if (err.message !== 'NO_AWS_CREDS') console.error("OCR Error:", err);
+      // Fallback for demo: simulate some IDs
+      extractedIds = ['101', '102', '103'];
     }
-  } catch (err) {
-    if (err.message !== 'NO_AWS_CREDS') {
-      console.error("AWS Textract Error:", err);
-    }
-    // Fallback: Simulate OCR for presentation
-    // Automatically marks the first student (Roll 101) present, and next two absent.
-    extractedRollNumbers = ['101', '102'];
   }
 
-  // Now submit the attendance using facultyService logic
-  // First, get all students in this session
+  // 2. Normalize Extracted IDs for matching
+  const normalize = (val) => String(val).trim().toUpperCase().replace(/^0+/, '');
+  const normalizedExtracted = extractedIds.map(normalize);
+
+  // 3. Get Session Students to map extracted IDs to student_ids
   const sessionData = await facultyService.getSessionStudents(sessionId);
   if (!sessionData || !sessionData.students) throw new Error('Session not found');
 
   const allStudents = sessionData.students;
-  // If OCR found them as 'P', they are present.
-  // Absent ones are those NOT in extractedRollNumbers
+  
+  // A student is ABSENT if their identifier (Roll or GR) was NOT found as "Present" in the file
   const absentStudentIds = allStudents
-    .filter(s => !extractedRollNumbers.includes(s.roll_number) && !extractedRollNumbers.includes(s.gr_number))
+    .filter(s => {
+      const sRoll = normalize(s.roll_number || '');
+      const sGr = normalize(s.gr_number || '');
+      return !normalizedExtracted.includes(sRoll) && !normalizedExtracted.includes(sGr);
+    })
     .map(s => s.student_id);
 
-  const result = await facultyService.submitAttendance(sessionId, absentStudentIds, userId);
-  return { ...result, ocr_extracted_count: extractedRollNumbers.length };
+  // 4. Return results for preview
+  // We return the list of students that SHOULD be marked absent based on the file.
+  // The frontend will use this to update its UI state so the user can review.
+  return { 
+    absent_student_ids: absentStudentIds,
+    present_student_ids: allStudents.filter(s => !absentStudentIds.includes(s.student_id)).map(s => s.student_id),
+    identified_present_count: extractedIds.length,
+    processed_method: isExcel ? 'Excel' : (isCsv ? 'CSV' : 'OCR')
+  };
 }
 
-module.exports = { resolveSession, getAlerts, processOCR };
+module.exports = { resolveSession, getAlerts, processAttendanceFile };
+
+

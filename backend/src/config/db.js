@@ -70,6 +70,7 @@ function mapKeys(table, keyObj) {
   const t = tableName(table);
   const map = KEY_MAPS[t];
   if (!map) return keyObj;
+  
   const newKey = {};
   for (const [k, v] of Object.entries(keyObj)) {
     newKey[map[k] || k] = v;
@@ -77,22 +78,23 @@ function mapKeys(table, keyObj) {
   return newKey;
 }
 
-/**
- * Maps SQL columns back to DynamoDB property names for output consistency.
- */
 function reverseMap(table, item) {
   if (DB_TYPE !== 'supabase' || !item) return item;
-  const t = table.toLowerCase();
+  const t = tableName(table);
   const map = KEY_MAPS[t];
   if (!map) return item;
+  
   const newItem = { ...item };
   for (const [dynamoKey, sqlKey] of Object.entries(map)) {
     if (item[sqlKey] !== undefined) {
       newItem[dynamoKey] = item[sqlKey];
+      // Ensure 'id' is available for frontend compatibility
+      if (sqlKey === 'id') newItem.id = item[sqlKey];
     }
   }
   return newItem;
 }
+
 
 // Valid columns for SQL tables (prevents 500 errors from extra DynamoDB fields)
 const TABLE_COLUMNS = {
@@ -102,8 +104,9 @@ const TABLE_COLUMNS = {
   'departments': ['id', 'name', 'code', 'created_at', 'updated_at'],
   'courses': ['id', 'name', 'code', 'department_id', 'semester', 'credits', 'created_at', 'updated_at'],
   'enrollments': ['id', 'student_id', 'course_id', 'academic_year', 'created_at'],
-  'gate_logs': ['id', 'student_id', 'source', 'scanned_at', 'gate_name', 'raw_payload', 'created_at'],
+  'gate_logs': ['id', 'student_id', 'source', 'scanned_at', 'gate_name', 'raw_payload', 'created_at', 'scan_date'],
   'attendance_records': ['id', 'session_id', 'student_id', 'status', 'marked_by_faculty', 'gate_entry_id', 'late_flag', 'resolved_at', 'created_at', 'updated_at'],
+
   'lecture_sessions': ['id', 'course_id', 'faculty_id', 'division', 'session_date', 'start_time', 'end_time', 'is_completed', 'created_at', 'updated_at'],
   'qr_tokens': ['id', 'student_id', 'token', 'is_used', 'expires_at', 'used_at', 'created_at'],
   'audit_logs': ['id', 'user_id', 'action', 'entity_type', 'entity_id', 'old_data', 'new_data', 'ip_address', 'created_at'],
@@ -142,20 +145,24 @@ async function getItem(table, key) {
 async function putItem(table, item) {
   if (DB_TYPE === 'supabase') {
     const t = tableName(table);
-    let cleanItem = { ...item };
+    
+    // Convert JS keys to SQL columns (e.g. sessionId -> id)
     const map = KEY_MAPS[t];
+    let sqlItem = { ...item };
     if (map) {
-      for (const [dynamoKey, sqlKey] of Object.entries(map)) {
-        if (cleanItem[dynamoKey] !== undefined) {
-          cleanItem[sqlKey] = cleanItem[dynamoKey];
-          delete cleanItem[dynamoKey];
+      for (const [jsKey, sqlKey] of Object.entries(map)) {
+        if (item[jsKey] !== undefined) {
+          sqlItem[sqlKey] = item[jsKey];
+          // Delete the JS key to avoid sending it as an extra column
+          if (jsKey !== sqlKey) delete sqlItem[jsKey];
         }
       }
     }
-    cleanItem = filterSqlColumns(t, cleanItem);
 
-    console.log(`[Supabase Put] Table: ${t}, Payload:`, cleanItem);
-    const { data, error } = await supabase.from(t).upsert(cleanItem).select().single();
+    const filteredItem = filterSqlColumns(t, sqlItem);
+
+    console.log(`[Supabase Put] Table: ${t}, Payload:`, filteredItem);
+    const { data, error } = await supabase.from(t).upsert(filteredItem).select().single();
     if (error) {
       console.error(`Supabase putItem error [${t}]:`, error);
       throw error;
@@ -166,26 +173,33 @@ async function putItem(table, item) {
   return item;
 }
 
+
 async function updateItem(table, key, updateExpression, expressionValues, expressionNames = {}) {
   if (DB_TYPE === 'supabase') {
     const t = tableName(table);
     const mappedKey = mapKeys(t, key);
     const updateData = {};
     
+    // Simple SET replacement logic
     const parts = updateExpression.replace('SET ', '').split(',');
     for (const part of parts) {
-      const [kPart, vPart] = part.split('=').map(s => s.trim());
-      if (kPart && vPart) {
-        const realKey = expressionNames[kPart] || kPart.replace('#', '');
-        const realValue = expressionValues[vPart];
-        if (realValue !== undefined) {
-          updateData[realKey] = realValue;
-        }
+      const sides = part.split('=');
+      if (sides.length !== 2) continue;
+      const kPart = sides[0].trim();
+      const vPart = sides[1].trim();
+      
+      const realKey = expressionNames[kPart] || kPart.replace('#', '');
+      const realValue = expressionValues[vPart];
+      if (realValue !== undefined) {
+        updateData[realKey] = realValue;
       }
     }
     
     const cleanUpdateData = filterSqlColumns(t, updateData);
     
+    // Check if we have anything to update after filtering
+    if (Object.keys(cleanUpdateData).length === 0) return null;
+
     const { data, error } = await supabase.from(t).update(cleanUpdateData).match(mappedKey).select().single();
     if (error) {
       console.error(`Supabase updateItem error [${t}]:`, error);
@@ -213,23 +227,81 @@ async function deleteItem(table, key) {
   return result.Attributes || null;
 }
 
+/**
+ * Robust Expression Parser for Supabase translation.
+ * Supports: =, >, <, begins_with, AND
+ */
+function applyExpression(query, expression, values, names) {
+  if (!expression) return query;
+  
+  const parts = expression.split('AND').map(p => p.trim());
+  let q = query;
+  
+  for (const part of parts) {
+    if (part.includes('begins_with')) {
+      // begins_with(field, :val)
+      const match = part.match(/begins_with\s*\(([^,]+),\s*([^)]+)\)/);
+      if (match) {
+        const k = match[1].trim();
+        const vPlaceholder = match[2].trim();
+        const realKey = names?.[k] || k;
+        const realValue = values[vPlaceholder];
+        if (realValue !== undefined) q = q.like(realKey, `${realValue}%`);
+      }
+    } else if (part.includes('>=')) {
+      const [k, v] = part.split('>=').map(s => s.trim());
+      const realKey = names?.[k] || k;
+      const realValue = values[v];
+      if (realValue !== undefined) q = q.gte(realKey, realValue);
+    } else if (part.includes('<=')) {
+      const [k, v] = part.split('<=').map(s => s.trim());
+      const realKey = names?.[k] || k;
+      const realValue = values[v];
+      if (realValue !== undefined) q = q.lte(realKey, realValue);
+    } else if (part.includes('=')) {
+      const [k, v] = part.split('=').map(s => s.trim());
+      const realKey = names?.[k] || k;
+      const realValue = values[v];
+      if (realValue !== undefined) q = q.eq(realKey, realValue);
+    } else if (part.includes('>')) {
+      const [k, v] = part.split('>').map(s => s.trim());
+      const realKey = names?.[k] || k;
+      const realValue = values[v];
+      if (realValue !== undefined) q = q.gt(realKey, realValue);
+    } else if (part.includes('<')) {
+      const [k, v] = part.split('<').map(s => s.trim());
+      const realKey = names?.[k] || k;
+      const realValue = values[v];
+      if (realValue !== undefined) q = q.lt(realKey, realValue);
+    }
+  }
+  return q;
+}
+
+
 async function queryItems(table, params) {
   if (DB_TYPE === 'supabase') {
     const t = tableName(table);
     let query = supabase.from(t).select('*');
     
-    if (params.IndexName && params.KeyConditionExpression) {
-      const condition = params.KeyConditionExpression;
-      if (condition.includes('=')) {
-        const [k, vPlaceholder] = condition.split('=').map(s => s.trim());
-        const realKey = params.ExpressionAttributeNames?.[k] || k;
-        const realValue = params.ExpressionAttributeValues[vPlaceholder];
-        query = query.eq(realKey, realValue);
-      }
+    // Apply KeyCondition
+    if (params.KeyConditionExpression) {
+      query = applyExpression(query, params.KeyConditionExpression, params.ExpressionAttributeValues, params.ExpressionAttributeNames);
+    }
+    
+    // Apply Filter (if any)
+    if (params.FilterExpression) {
+      query = applyExpression(query, params.FilterExpression, params.ExpressionAttributeValues, params.ExpressionAttributeNames);
     }
 
+    if (params.Limit) query = query.limit(params.Limit);
+    if (params.ScanIndexForward === false) query = query.order('created_at', { ascending: false }); // Best effort
+
     const { data, error } = await query;
-    if (error) return [];
+    if (error) {
+      console.error(`Supabase queryItems error [${t}]:`, error);
+      return [];
+    }
     return (data || []).map(item => reverseMap(t, item));
   }
   
@@ -242,20 +314,17 @@ async function scanItems(table, params = {}) {
     const t = tableName(table);
     let query = supabase.from(t).select('*');
     
-    if (params.FilterExpression && params.ExpressionAttributeValues) {
-      const parts = params.FilterExpression.split('AND').map(p => p.trim());
-      for (const part of parts) {
-        if (part.includes('=')) {
-          const [k, vPlaceholder] = part.split('=').map(s => s.trim());
-          const realKey = params.ExpressionAttributeNames?.[k] || k;
-          const realValue = params.ExpressionAttributeValues[vPlaceholder];
-          if (realValue !== undefined) query = query.eq(realKey, realValue);
-        }
-      }
+    if (params.FilterExpression) {
+      query = applyExpression(query, params.FilterExpression, params.ExpressionAttributeValues, params.ExpressionAttributeNames);
     }
 
+    if (params.Limit) query = query.limit(params.Limit);
+
     const { data, error } = await query;
-    if (error) return [];
+    if (error) {
+      console.error(`Supabase scanItems error [${t}]:`, error);
+      return [];
+    }
     return (data || []).map(item => reverseMap(t, item));
   }
 
@@ -272,8 +341,12 @@ async function scanItems(table, params = {}) {
 async function batchWrite(table, items) {
   if (DB_TYPE === 'supabase') {
     const t = tableName(table);
+    // Supabase upsert works with arrays
     const { error } = await supabase.from(t).upsert(items);
-    if (error) throw error;
+    if (error) {
+      console.error(`Supabase batchWrite error [${t}]:`, error);
+      throw error;
+    }
     return;
   }
   const batches = [];
@@ -287,8 +360,12 @@ async function batchGet(table, keys) {
   if (DB_TYPE === 'supabase') {
     const t = tableName(table);
     const mappedKeys = keys.map(k => mapKeys(t, k));
+    // Assuming keys are IDs for simple translation
     const { data, error } = await supabase.from(t).select('*').in('id', mappedKeys.map(k => k.id));
-    if (error) throw error;
+    if (error) {
+      console.error(`Supabase batchGet error [${t}]:`, error);
+      throw error;
+    }
     return (data || []).map(item => reverseMap(t, item));
   }
   const allItems = [];
@@ -316,3 +393,4 @@ module.exports = {
   batchGet,
   isMock,
 };
+

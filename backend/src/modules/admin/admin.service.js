@@ -352,4 +352,81 @@ async function deleteSession(id) {
   return { message: 'Session deleted' };
 }
 
-module.exports = { getDashboardStats, getGateLogs, mapRfid, getRfidMappings, revokeRfid, listSessions, createSession, updateSession, deleteSession };
+async function listCourses() {
+  if (isMock()) {
+    const mock = getMock();
+    return mock.store.courses;
+  }
+  const courses = await scanItems('Courses');
+  return courses.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+}
+
+async function createCourse(data) {
+  if (isMock()) {
+    const mock = getMock();
+    const id = mock.uuid();
+    const course = { id, ...data };
+    mock.store.courses.push(course);
+    return course;
+  }
+  const courseId = uuidv4();
+  const now = new Date().toISOString();
+  const course = {
+    courseId,
+    name: data.name,
+    code: data.code,
+    department_id: data.department_id || 'd0000000-0000-0000-0000-000000000001',
+    semester: parseInt(data.semester) || 1,
+    credits: parseInt(data.credits) || 3,
+    created_at: now,
+    updated_at: now,
+  };
+
+  await putItem('Courses', course);
+  return { id: courseId, ...course };
+}
+
+async function updateCourse(id, data) {
+  if (isMock()) {
+    const mock = getMock();
+    const idx = mock.store.courses.findIndex(c => c.id === id);
+    if (idx === -1) throw new AppError('Course not found', 404);
+    mock.store.courses[idx] = { ...mock.store.courses[idx], ...data };
+    return mock.store.courses[idx];
+  }
+  const now = new Date().toISOString();
+  const updated = await updateItem('Courses', { courseId: id },
+    'SET #n = :name, code = :code, updated_at = :now',
+    { ':name': data.name, ':code': data.code, ':now': now },
+    { '#n': 'name' }
+  );
+  return { id, ...updated };
+}
+
+async function deleteCourse(id) {
+  if (isMock()) {
+    const mock = getMock();
+    mock.store.courses = mock.store.courses.filter(c => c.id !== id);
+    return { success: true };
+  }
+  await deleteItem('Courses', { courseId: id });
+  return { success: true };
+}
+
+module.exports = {
+  getDashboardStats,
+  getGateLogs,
+  mapRfid,
+  getRfidMappings,
+  revokeRfid,
+  listSessions,
+  createSession,
+  updateSession,
+  deleteSession,
+  listCourses,
+  createCourse,
+  updateCourse,
+  deleteCourse,
+};
+
+

@@ -8,6 +8,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 
 router.post('/resolve/:sessionId', authenticate, authorize('admin', 'faculty'), ctrl.resolveSession);
 router.get('/alerts', authenticate, authorize('admin', 'faculty'), ctrl.getAlerts);
-router.post('/upload-ocr/:sessionId', authenticate, authorize('faculty'), upload.single('document'), ctrl.uploadOCR);
+router.post('/upload/:sessionId', authenticate, authorize('admin', 'faculty'), upload.single('document'), ctrl.uploadAttendance);
+
 
 module.exports = router;

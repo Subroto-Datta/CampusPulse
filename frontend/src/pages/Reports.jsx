@@ -10,7 +10,9 @@ const TABS = [
   { key: 'low', label: 'Low Attendance' },
   { key: 'bunk', label: 'Bunk Suspects' },
   { key: 'late', label: 'Late Arrivals' },
+  { key: 'overall', label: 'Overall Master' },
 ];
+
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState('daily');
@@ -27,7 +29,9 @@ export default function Reports() {
       low: '/reports/low-attendance',
       bunk: '/reports/bunk-suspects',
       late: '/reports/late-arrivals',
+      overall: '/reports/overall',
     };
+
     try {
       const { data: resp } = await api.get(endpoints[activeTab]);
       setData(resp.data || []);
@@ -130,12 +134,13 @@ export default function Reports() {
           )}
 
           {/* Table views */}
-          {['low', 'bunk', 'late'].includes(activeTab) && (
+          {['low', 'bunk', 'late', 'overall'].includes(activeTab) && (
             <div>
               <h3 className="text-lg font-semibold text-text mb-6">
                 {activeTab === 'low' ? 'Low Attendance (<75%)' :
                  activeTab === 'bunk' ? 'Bunk Suspects (Last 7 days)' :
-                 'Late Arrivals (Last 7 days)'}
+                 activeTab === 'late' ? 'Late Arrivals (Last 7 days)' :
+                 'Overall Student Attendance Master'}
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
@@ -144,7 +149,8 @@ export default function Reports() {
                       <th className="px-6 py-4 font-medium text-text-muted">Student</th>
                       <th className="px-6 py-4 font-medium text-text-muted">GR Number</th>
                       <th className="px-6 py-4 font-medium text-text-muted">Roll</th>
-                      {activeTab === 'low' && <th className="px-6 py-4 font-medium text-text-muted text-right">Attendance %</th>}
+                      {activeTab === 'overall' && <th className="px-6 py-4 font-medium text-text-muted text-center">Sessions</th>}
+                      {['low', 'overall'].includes(activeTab) && <th className="px-6 py-4 font-medium text-text-muted text-right">Attendance %</th>}
                       {activeTab === 'bunk' && <th className="px-6 py-4 font-medium text-text-muted text-right">Bunk Count</th>}
                       {activeTab === 'late' && <th className="px-6 py-4 font-medium text-text-muted text-right">Late Count</th>}
                     </tr>
@@ -155,10 +161,13 @@ export default function Reports() {
                         <td className="px-6 py-4 text-text font-medium">{row.full_name}</td>
                         <td className="px-6 py-4 text-text-muted font-mono">{row.gr_number}</td>
                         <td className="px-6 py-4 text-text-muted">{row.roll_number}</td>
-                        {activeTab === 'low' && (
+                        {activeTab === 'overall' && <td className="px-6 py-4 text-center text-text-muted">{row.present_count} / {row.total_sessions}</td>}
+                        {['low', 'overall'].includes(activeTab) && (
                           <td className="px-6 py-4 text-right">
                             <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold border ${
-                              parseFloat(row.attendance_pct) < 50 ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                              parseFloat(row.attendance_pct) < 50 ? 'bg-red-500/10 text-red-500 border-red-500/20' : 
+                              parseFloat(row.attendance_pct) < 75 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                              'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                             }`}>
                               {row.attendance_pct}%
                             </span>
@@ -173,6 +182,7 @@ export default function Reports() {
               </div>
             </div>
           )}
+
         </div>
       )}
     </div>

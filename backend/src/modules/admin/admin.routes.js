@@ -16,4 +16,11 @@ router.post('/sessions', authenticate, authorize('admin'), ctrl.createSession);
 router.put('/sessions/:id', authenticate, authorize('admin'), ctrl.updateSession);
 router.delete('/sessions/:id', authenticate, authorize('admin'), ctrl.deleteSession);
 
+router.get('/courses', authenticate, authorize('admin'), ctrl.listCourses);
+router.post('/courses', authenticate, authorize('admin'), ctrl.createCourse);
+router.put('/courses/:id', authenticate, authorize('admin'), ctrl.updateCourse);
+router.delete('/courses/:id', authenticate, authorize('admin', 'faculty'), ctrl.deleteCourse);
+
 module.exports = router;
+
+
