@@ -1,0 +1,25 @@
+{
+  "students": [
+    {
+      "id": "cb082f0e-436c-46e6-a9c9-71420a3ff00a",
+      "user_id": "5c89331d-8a14-477f-830b-b19a443626f8",
+      "gr_number": "GR222083",
+      "roll_number": "16",
+      "division": "A",
+      "semester": 1,
+      "full_name": "Abhinav Dasari",
+      "email": "abhinav.dasari@somaiya.edu",
+      "phone": null,
+      "is_active": true,
+      "department_name": "Computer Science",
+      "department_code": "CS",
+      "attendance_summary": {
+        "overall_pct": 0,
+        "total_sessions": 0
+      }
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 50
+}

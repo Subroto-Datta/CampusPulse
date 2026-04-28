@@ -1,0 +1,91 @@
+{
+  "students": [
+    {
+      "id": "36253eed-f1a0-44b7-9a4f-2677efa70924",
+      "user_id": "8c93ee7d-01b2-4128-aafc-393c898ed03c",
+      "gr_number": "2220230605",
+      "roll_number": "45",
+      "division": "B",
+      "semester": 1,
+      "department_id": "d0000000-0000-0000-0000-000000000001",
+      "admission_year": null,
+      "created_at": "2026-04-26T18:32:56.040981+00:00",
+      "updated_at": "2026-04-26T18:32:56.040981+00:00",
+      "rfid_tag": null
+    },
+    {
+      "id": "802665cd-4477-461a-8c3a-257873464a72",
+      "user_id": "80b97210-aa44-480a-a4f3-53c3721e8779",
+      "gr_number": "GR20001102",
+      "roll_number": "12",
+      "division": "A",
+      "semester": 1,
+      "department_id": "d0000000-0000-0000-0000-000000000001",
+      "admission_year": null,
+      "created_at": "2026-04-27T08:21:55.848+00:00",
+      "updated_at": "2026-04-27T08:21:55.848+00:00",
+      "rfid_tag": null
+    },
+    {
+      "id": "fac2b3c8-e16b-4fa2-b063-b82d75de0185",
+      "user_id": "e41693f6-9728-4118-851f-4f78ced3b4aa",
+      "gr_number": "GR6372812",
+      "roll_number": "08",
+      "division": "A",
+      "semester": 1,
+      "department_id": "d0000000-0000-0000-0000-000000000001",
+      "admission_year": null,
+      "created_at": "2026-04-26T18:32:56.040981+00:00",
+      "updated_at": "2026-04-28T04:01:05.174475+00:00",
+      "rfid_tag": null
+    },
+    {
+      "id": "cb082f0e-436c-46e6-a9c9-71420a3ff00a",
+      "user_id": "5c89331d-8a14-477f-830b-b19a443626f8",
+      "gr_number": "GR222083",
+      "roll_number": "16",
+      "division": "A",
+      "semester": 1,
+      "department_id": "d0000000-0000-0000-0000-000000000001",
+      "admission_year": null,
+      "created_at": "2026-04-28T03:31:52.348+00:00",
+      "updated_at": "2026-04-28T04:01:05.174475+00:00",
+      "rfid_tag": "AA4A5C18"
+    },
+    {
+      "id": "c71d664c-c03d-4b78-b2b9-90193c3e1bfd",
+      "user_id": "926bb1e1-215a-416f-8325-792add509c38",
+      "gr_number": "GR483902",
+      "roll_number": "7",
+      "division": "A",
+      "semester": 1,
+      "department_id": "d0000000-0000-0000-0000-000000000001",
+      "admission_year": null,
+      "created_at": "2026-04-28T04:03:59.848+00:00",
+      "updated_at": "2026-04-28T04:03:59.848+00:00",
+      "rfid_tag": null
+    }
+  ],
+  "rfid_cards": [
+    {
+      "id": "c263fc57-6022-4385-bfb1-5631aae218a1",
+      "rfid_uid": "AA4A5C18",
+      "student_id": "cb082f0e-436c-46e6-a9c9-71420a3ff00a",
+      "is_active": true,
+      "issued_at": "2026-04-28T04:01:05.174475+00:00",
+      "revoked_at": null,
+      "created_at": "2026-04-28T04:01:05.174475+00:00",
+      "updated_at": "2026-04-28T04:01:05.174475+00:00"
+    },
+    {
+      "id": "05248301-dc19-4d57-9791-d009c5ff7155",
+      "rfid_uid": "8A685918",
+      "student_id": "c71d664c-c03d-4b78-b2b9-90193c3e1bfd",
+      "is_active": true,
+      "issued_at": "2026-04-28T04:04:26.304+00:00",
+      "revoked_at": null,
+      "created_at": "2026-04-28T04:04:26.304+00:00",
+      "updated_at": "2026-04-28T04:04:26.304+00:00"
+    }
+  ]
+}

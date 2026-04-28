@@ -99,7 +99,7 @@ function reverseMap(table, item) {
 // Valid columns for SQL tables (prevents 500 errors from extra DynamoDB fields)
 const TABLE_COLUMNS = {
   'users': ['id', 'email', 'password_hash', 'role', 'full_name', 'phone', 'is_active', 'last_login', 'created_at', 'updated_at'],
-  'students': ['id', 'user_id', 'gr_number', 'roll_number', 'division', 'semester', 'department_id', 'admission_year', 'created_at', 'updated_at'],
+  'students': ['id', 'user_id', 'gr_number', 'roll_number', 'division', 'semester', 'department_id', 'admission_year', 'created_at', 'updated_at', 'rfid_tag'],
   'faculty': ['id', 'user_id', 'employee_id', 'department_id', 'designation', 'created_at', 'updated_at'],
   'departments': ['id', 'name', 'code', 'created_at', 'updated_at'],
   'courses': ['id', 'name', 'code', 'department_id', 'semester', 'credits', 'created_at', 'updated_at'],

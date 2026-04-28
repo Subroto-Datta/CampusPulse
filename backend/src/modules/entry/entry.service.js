@@ -5,6 +5,7 @@ const AppError = require('../../utils/AppError');
 function getMock() { return require('../../config/mockDb'); }
 
 async function processRfidEntry({ rfid_uid, timestamp }) {
+  rfid_uid = (rfid_uid || '').trim().toUpperCase();
   const scanTime = timestamp ? new Date(timestamp) : new Date();
 
   if (isMock()) {

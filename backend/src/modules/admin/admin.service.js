@@ -155,6 +155,7 @@ async function getGateLogs({ date, source, page = 1, limit = 50 }) {
 }
 
 async function mapRfid({ rfid_uid, student_id }) {
+  rfid_uid = (rfid_uid || '').trim().toUpperCase();
   if (isMock()) {
     const mock = getMock();
     if (mock.store.rfid_cards.find(r => r.rfid_uid === rfid_uid)) throw new AppError('RFID UID already mapped', 409);
@@ -185,6 +186,8 @@ async function mapRfid({ rfid_uid, student_id }) {
     updated_at: now,
   };
   await putItem('RfidCards', card);
+  // Synchronize the tag to the actual student profile so the RPC function recognizes it
+  await updateItem('Students', { studentId: student_id }, 'SET rfid_tag = :uid, updated_at = :now', { ':uid': rfid_uid, ':now': now });
   return { id: cardId, rfid_uid, student_id, issued_at: now };
 }
 

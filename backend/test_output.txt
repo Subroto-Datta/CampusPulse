@@ -1,0 +1,16 @@
+{
+  "user": {
+    "id": "5c89331d-8a14-477f-830b-b19a443626f8",
+    "email": "abhinav.dasari@somaiya.edu",
+    "password_hash": "$2a$12$nJoQJln9tlotsorWOKrPYe6RpJPZdXAMewCbinbO3oWxp2dhISFby",
+    "role": "student",
+    "full_name": "Abhinav Dasari",
+    "phone": null,
+    "is_active": true,
+    "last_login": null,
+    "created_at": "2026-04-28T03:31:52.348+00:00",
+    "updated_at": "2026-04-28T03:31:52.348+00:00",
+    "userId": "5c89331d-8a14-477f-830b-b19a443626f8"
+  },
+  "student": null
+}

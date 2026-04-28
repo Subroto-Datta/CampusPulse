@@ -148,7 +148,7 @@ export default function GateLogs() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right text-text-muted font-medium">
-                        {log.gate_name || 'MAIN GATE'}
+                        MAIN GATE
                       </td>
                     </motion.tr>
                   ))
