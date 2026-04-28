@@ -95,8 +95,8 @@ async function getStudentDetail(studentId) {
     const u = mock.getUser(s.user_id);
     const d = mock.getDept(s.department_id);
     const records = mock.store.attendance_records.filter(ar => ar.student_id === studentId);
-    const present = records.filter(r => r.status === 'PRESENT_CONFIRMED').length;
-    const absent = records.filter(r => r.status === 'ABSENT_CONFIRMED').length;
+    const present = records.filter(r => ['PRESENT_CONFIRMED', 'LATE_PRESENT', 'MANUAL_PRESENT'].includes(r.status)).length;
+    const absent = records.filter(r => ['ABSENT_CONFIRMED', 'BUNK_SUSPECTED'].includes(r.status)).length;
     return { ...s, full_name: u?.full_name, email: u?.email, department_name: d?.name, department_code: d?.code,
       attendance_summary: { total_sessions: records.length, present, absent, needs_review: records.length - present - absent, late_count: records.filter(r => r.late_flag).length, attendance_pct: records.length ? Math.round(present / records.length * 1000) / 10 : null }
     };
@@ -115,8 +115,8 @@ async function getStudentDetail(studentId) {
     ExpressionAttributeValues: { ':sid': studentId },
   });
 
-  const present = records.filter(r => r.status === 'PRESENT_CONFIRMED').length;
-  const absent = records.filter(r => r.status === 'ABSENT_CONFIRMED').length;
+  const present = records.filter(r => ['PRESENT_CONFIRMED', 'LATE_PRESENT', 'MANUAL_PRESENT'].includes(r.status)).length;
+  const absent = records.filter(r => ['ABSENT_CONFIRMED', 'BUNK_SUSPECTED'].includes(r.status)).length;
   const lateCount = records.filter(r => r.late_flag).length;
   const totalSessions = records.length;
   const pct = totalSessions ? Math.round(present / totalSessions * 1000) / 10 : null;

@@ -15,7 +15,7 @@ export default function Students() {
   
   // Form State
   const [formData, setFormData] = useState({
-    full_name: '', email: '', gr_number: '', roll_number: '', division: '', is_active: true
+    full_name: '', email: '', gr_number: '', roll_number: '', division: '', semester: '', is_active: true
   });
   const [formLoading, setFormLoading] = useState(false);
 
@@ -40,14 +40,14 @@ export default function Students() {
     setEditingStudent(s.id);
     setFormData({
       full_name: s.full_name || '', email: s.email || '', gr_number: s.gr_number || '',
-      roll_number: s.roll_number || '', division: s.division || '', is_active: s.is_active
+      roll_number: s.roll_number || '', division: s.division || '', semester: s.semester || '', is_active: s.is_active
     });
     setShowModal(true);
   }
 
   function handleAddNew() {
     setEditingStudent(null);
-    setFormData({ full_name: '', email: '', gr_number: '', roll_number: '', division: '', is_active: true });
+    setFormData({ full_name: '', email: '', gr_number: '', roll_number: '', division: '', semester: '', is_active: true });
     setShowModal(true);
   }
 
@@ -118,7 +118,8 @@ export default function Students() {
                 <th className="text-left px-6 py-4 text-gray-400 font-medium">Student</th>
                 <th className="text-left px-6 py-4 text-gray-400 font-medium">GR Number</th>
                 <th className="text-left px-6 py-4 text-gray-400 font-medium">Roll</th>
-                <th className="text-left px-6 py-4 text-gray-400 font-medium">Division</th>
+                <th className="text-left px-6 py-4 text-gray-400 font-medium">Sem/Yr</th>
+                <th className="text-left px-6 py-4 text-gray-400 font-medium">Div</th>
                 <th className="text-left px-6 py-4 text-gray-400 font-medium">Status</th>
                 <th className="text-left px-6 py-4 text-gray-400 font-medium">Actions</th>
               </tr>
@@ -157,6 +158,7 @@ export default function Students() {
                     </td>
                     <td className="px-6 py-4 text-gray-300 font-mono">{s.gr_number}</td>
                     <td className="px-6 py-4 text-gray-300">{s.roll_number}</td>
+                    <td className="px-6 py-4 text-gray-300">Sem {s.semester || '1'}</td>
                     <td className="px-6 py-4 text-gray-300">{s.division}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${s.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-danger-500/20 text-danger-400'}`}>
@@ -233,6 +235,10 @@ export default function Students() {
                 <div>
                   <label className="block text-sm font-medium text-text-muted mb-1.5">Division</label>
                   <input required type="text" value={formData.division} onChange={e => setFormData({...formData, division: e.target.value})} className="input-field" placeholder="A" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-1.5">Semester / Year</label>
+                  <input required type="number" min="1" max="8" value={formData.semester} onChange={e => setFormData({...formData, semester: parseInt(e.target.value) || ''})} className="input-field" placeholder="3" />
                 </div>
                 <div className="flex items-center sm:mt-8 mt-2">
                   <label className="flex items-center gap-3 cursor-pointer group">

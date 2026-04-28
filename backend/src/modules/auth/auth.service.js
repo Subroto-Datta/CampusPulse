@@ -133,11 +133,11 @@ async function me(userId) {
   }
 
   return {
-    id: user.userId, email: user.email, role: user.role, full_name: user.full_name,
+    id: user.id, email: user.email, role: user.role, full_name: user.full_name,
     phone: user.phone, is_active: user.is_active, last_login: user.last_login,
-    student_id: s?.studentId || null, gr_number: s?.gr_number || null,
+    student_id: s?.id || null, gr_number: s?.gr_number || null,
     roll_number: s?.roll_number || null, division: s?.division || null, semester: s?.semester || null,
-    faculty_id: f?.facultyId || null, employee_id: f?.employee_id || null, designation: f?.designation || null,
+    faculty_id: f?.id || null, employee_id: f?.employee_id || null, designation: f?.designation || null,
     department_name: dept?.name || null, department_code: dept?.code || null,
   };
 }

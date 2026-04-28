@@ -18,7 +18,7 @@ async function dailyAttendanceTrend(days = 30) {
       const basePresent = 7;
       const noise = Math.floor(Math.sin(i) * 1.5); // deterministic variation
       const present = Math.max(4, Math.min(total, basePresent + noise));
-      trend.push({ session_date: date, total, present, pct: Math.round(present / total * 1000) / 10 });
+      trend.push({ session_date: date, total, present, pct: Math.round(present / total * 1000) / 10, gate_entries: present + 3 });
     }
     return trend;
   }
@@ -43,17 +43,28 @@ async function dailyAttendanceTrend(days = 30) {
       dateMap[session.session_date] = { total: 0, present: 0 };
     }
     dateMap[session.session_date].total += records.length;
-    dateMap[session.session_date].present += records.filter(r => r.status === 'PRESENT_CONFIRMED').length;
+    dateMap[session.session_date].present += records.filter(r => ['PRESENT_CONFIRMED', 'LATE_PRESENT', 'MANUAL_PRESENT'].includes(r.status)).length;
   }
 
-  return Object.entries(dateMap)
-    .map(([date, { total, present }]) => ({
+  const results = [];
+  for (const [date, payload] of Object.entries(dateMap)) {
+    // Also fetch gate entries for this day!
+    const logs = await queryItems('GateLogs', {
+      IndexName: 'DateIndex',
+      KeyConditionExpression: 'scan_date = :d',
+      ExpressionAttributeValues: { ':d': date },
+    });
+
+    results.push({
       session_date: date,
-      total,
-      present,
-      pct: total > 0 ? Math.round(present / total * 1000) / 10 : 0,
-    }))
-    .sort((a, b) => a.session_date.localeCompare(b.session_date));
+      total: payload.total,
+      present: payload.present,
+      pct: payload.total > 0 ? Math.round(payload.present / payload.total * 1000) / 10 : 0,
+      gate_entries: logs.length
+    });
+  }
+
+  return results.sort((a, b) => a.session_date.localeCompare(b.session_date));
 }
 
 async function subjectWiseAttendance() {

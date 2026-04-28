@@ -78,10 +78,8 @@ async function getSessionStudents(sessionId) {
     const mock = getMock();
     const session = mock.store.lecture_sessions.find(ls => ls.id === sessionId);
     if (!session) throw new AppError('Session not found', 404);
-    const enrolled = mock.store.enrollments.filter(e => e.course_id === session.course_id);
-    const studs = enrolled.map(e => {
-      const s = mock.getStudent(e.student_id);
-      if (!s || s.division !== session.division) return null;
+    const course = mock.store.courses.find(c => c.id === session.course_id);
+    const studs = mock.store.students.filter(s => s.division === session.division && s.semester === course?.semester).map(s => {
       const u = mock.getUser(s.user_id);
       const ar = mock.store.attendance_records.find(a => a.session_id === sessionId && a.student_id === s.id);
       return { student_id: s.id, gr_number: s.gr_number, roll_number: s.roll_number, division: s.division, full_name: u?.full_name, attendance_status: ar?.status || null };
@@ -92,32 +90,24 @@ async function getSessionStudents(sessionId) {
   const session = await getItem('LectureSessions', { sessionId });
   if (!session) throw new AppError('Session not found', 404);
 
-  // Get enrollments for this course
-  const enrollments = await queryItems('Enrollments', {
-    IndexName: 'CourseIndex',
-    KeyConditionExpression: 'course_id = :cid',
-    ExpressionAttributeValues: { ':cid': session.course_id },
+  const course = await getItem('Courses', { courseId: session.course_id });
+  if (!course) throw new AppError('Course not found', 404);
+
+  // Directly fetch students by division and matching semester instead of relying on Enrollments table
+  const allStudents = await scanItems('Students', {
+    FilterExpression: 'division = :div AND semester = :sem',
+    ExpressionAttributeValues: { ':div': session.division, ':sem': course.semester }
   });
 
-  // Get attendance records for this session
+  // Get attendance records for this session to map to students
   const attendanceRecords = await queryItems('AttendanceRecords', {
     KeyConditionExpression: 'session_id = :sid',
     ExpressionAttributeValues: { ':sid': sessionId },
   });
 
   const studs = [];
-  const course = await getItem('Courses', { courseId: session.course_id });
   
-  for (const e of enrollments) {
-    const student = await getItem('Students', { studentId: e.student_id });
-    // Strict Cross-Check: Division AND Semester/Year
-    if (!student) continue;
-    if (student.division !== session.division) continue;
-    
-    // Check if student is in the correct semester for this course
-    // If course.semester is 3, student.semester should usually be 3.
-    if (course && student.semester !== course.semester) continue;
-
+  for (const student of allStudents) {
     const user = await getItem('Users', { userId: student.user_id });
     const ar = attendanceRecords.find(a => a.student_id === student.studentId);
     studs.push({
@@ -147,13 +137,12 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
     const mock = getMock();
     const session = mock.store.lecture_sessions.find(ls => ls.id === sessionId);
     if (!session) throw new AppError('Session not found or unauthorized', 403);
-    const enrolled = mock.store.enrollments.filter(e => e.course_id === session.course_id);
+    const course = mock.store.courses.find(c => c.id === session.course_id);
+    const validStudents = mock.store.students.filter(s => s.division === session.division && s.semester === course?.semester);
     const absentSet = new Set(absentStudentIds || []);
     mock.store.attendance_records = mock.store.attendance_records.filter(ar => ar.session_id !== sessionId);
     let presentCount = 0;
-    for (const e of enrolled) {
-      const s = mock.getStudent(e.student_id);
-      if (!s || s.division !== session.division) continue;
+    for (const s of validStudents) {
       const isAbsent = absentSet.has(s.id);
       const gateEntry = mock.store.gate_logs.find(g => g.student_id === s.id && g.scanned_at.slice(0, 10) === session.session_date);
       let status = 'NEEDS_REVIEW', lateFlag = false, gateEntryId = null;
@@ -181,7 +170,7 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
       }
     }
     session.is_completed = true;
-    const total = enrolled.filter(e => { const s = mock.getStudent(e.student_id); return s && s.division === session.division; }).length;
+    const total = validStudents.length;
     return { session_id: sessionId, total_students: total, absent_count: absentSet.size, present_count: total - absentSet.size };
   }
 
@@ -206,11 +195,13 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
   }
 
 
-  // Get enrolled students
-  const enrollments = await queryItems('Enrollments', {
-    IndexName: 'CourseIndex',
-    KeyConditionExpression: 'course_id = :cid',
-    ExpressionAttributeValues: { ':cid': session.course_id },
+  const course = await getItem('Courses', { courseId: session.course_id });
+  if (!course) throw new AppError('Course not found', 404);
+
+  // Directly fetch valid students
+  const validStudents = await scanItems('Students', {
+    FilterExpression: 'division = :div AND semester = :sem',
+    ExpressionAttributeValues: { ':div': session.division, ':sem': course.semester }
   });
 
   const absentSet = new Set(absentStudentIds || []);
@@ -227,9 +218,7 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
   let totalStudents = 0;
   const now = new Date().toISOString();
 
-  for (const e of enrollments) {
-    const student = await getItem('Students', { studentId: e.student_id });
-    if (!student || student.division !== session.division) continue;
+  for (const student of validStudents) {
     totalStudents++;
 
     const isAbsent = absentSet.has(student.studentId);
@@ -237,7 +226,9 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
     // Check gate entry for this student on session date
     const gateLogs = await queryItems('GateLogs', {
       IndexName: 'StudentTimeIndex',
-      KeyConditionExpression: 'student_id = :sid AND begins_with(scanned_at, :date)',
+      KeyConditionExpression: 'student_id = :sid',
+      FilterExpression: '#sd = :date',
+      ExpressionAttributeNames: { '#sd': 'scan_date' },
       ExpressionAttributeValues: { ':sid': student.studentId, ':date': session.session_date },
       ScanIndexForward: true,
       Limit: 1,

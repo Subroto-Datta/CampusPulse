@@ -73,7 +73,7 @@ export default function Courses() {
       setShowModal(false);
       loadCourses();
     } catch (err) {
-      alert('Failed to save course details');
+      alert(err.response?.data?.message || 'Failed to save course details');
     } finally {
       setFormLoading(false);
     }

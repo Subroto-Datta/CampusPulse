@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
-import { Search, Check, X, Loader2, AlertCircle, Undo2, LogOut, Upload } from 'lucide-react';
+import { Search, Check, X, Loader2, AlertCircle, Undo2, LogOut, Upload, Download } from 'lucide-react';
+import Papa from 'papaparse';
 import { cn } from '../utils/cn';
 
 export default function TakeAttendance() {
@@ -128,6 +129,26 @@ export default function TakeAttendance() {
     }
   };
 
+  const exportSessionCSV = () => {
+    if (!students.length) return;
+    const csvData = students.map(s => ({
+      'Student Name': s.full_name,
+      'GR Number': s.gr_number,
+      'Roll Number': s.roll_number,
+      'Semester': s.semester || 'N/A',
+      'Division': s.division || sessionInfo?.division || 'N/A',
+      'Status': absentIds.has(s.student_id) ? 'Absent' : 'Present'
+    }));
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Session_Attendance_${sessionInfo?.session_id || sessionId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const filtered = students.filter((s) => {
     const q = search.toLowerCase();
     return (
@@ -230,6 +251,16 @@ export default function TakeAttendance() {
         >
           <Undo2 className="w-5 h-5" />
         </button>
+
+        <button 
+          onClick={exportSessionCSV}
+          disabled={students.length === 0}
+          className="px-4 bg-surface border border-surface-border rounded-xl text-text hover:text-accent-400 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 font-medium"
+          title="Export CSV"
+        >
+          <Download className="w-5 h-5" />
+          <span className="hidden sm:inline text-sm">Export</span>
+        </button>
       </motion.div>
 
       {/* Grid */}
@@ -244,48 +275,63 @@ export default function TakeAttendance() {
           {filtered.map((s, i) => {
             const isAbsent = absentIds.has(s.student_id);
             return (
-              <motion.button
+              <motion.div
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
                 key={s.student_id}
-                onClick={() => toggleAbsent(s.student_id)}
                 className={cn(
-                  "relative flex items-center gap-4 p-4 rounded-2xl border text-left transition-all duration-200 group overflow-hidden",
+                  "relative flex flex-col gap-3 p-4 rounded-2xl border text-left transition-all duration-200 group overflow-hidden",
                   isAbsent
                     ? "bg-red-500/5 border-red-500/30 ring-1 ring-red-500/20 shadow-[inset_0_0_20px_rgba(239,68,68,0.05)]"
-                    : "bg-surface border-surface-border hover:border-primary/40 hover:bg-surface-hover/50 hover:shadow-md"
+                    : "bg-surface border-surface-border hover:border-border-muted hover:shadow-md"
                 )}
               >
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-colors",
-                  isAbsent ? "bg-red-500/20 text-red-500" : "bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500/20"
-                )}>
-                  {isAbsent ? <X className="w-6 h-6" /> : <Check className="w-6 h-6" />}
-                </div>
-                
-                <div className="min-w-0 flex-1">
-                  <p className={cn("font-semibold truncate transition-colors", isAbsent ? "text-red-400" : "text-text group-hover:text-primary")}>
-                    {s.full_name}
-                  </p>
-                  <p className="text-xs text-text-muted mt-0.5">
-                    <span className="font-medium text-text-muted/80">Roll {s.roll_number}</span> • {s.gr_number}
-                  </p>
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                    isAbsent ? "bg-red-500/20 text-red-500" : "bg-emerald-500/10 text-emerald-500"
+                  )}>
+                    {isAbsent ? <X className="w-6 h-6" /> : <Check className="w-6 h-6" />}
+                  </div>
+                  
+                  <div className="min-w-0 flex-1">
+                    <p className={cn("font-semibold truncate transition-colors", isAbsent ? "text-red-400" : "text-text")}>
+                      {s.full_name}
+                    </p>
+                    <p className="text-xs text-text-muted mt-0.5">
+                      <span className="font-medium text-text-muted/80">Roll {s.roll_number}</span> • {s.gr_number}
+                    </p>
+                    <div className="mt-1 flex gap-2">
+                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-border/50 text-text-muted">SEM {s.semester || 'N/A'}</span>
+                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-border/50 text-text-muted">DIV {s.division || sessionInfo?.division}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <AnimatePresence>
-                  {isAbsent && (
-                    <motion.div 
-                      initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
-                      className="absolute top-0 right-0 w-12 h-12 bg-red-500/10 flex items-start justify-end rounded-bl-3xl"
-                    >
-                      <div className="w-2 h-2 rounded-full bg-red-500 m-2 shadow-[0_0_8px_#ef4444]" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <button 
+                    onClick={() => { if (isAbsent) toggleAbsent(s.student_id); }}
+                    className={cn(
+                      "py-2 px-3 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors",
+                      !isAbsent ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20" : "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
+                    )}
+                  >
+                    <Check className="w-4 h-4" /> Present
+                  </button>
+                  <button 
+                    onClick={() => { if (!isAbsent) toggleAbsent(s.student_id); }}
+                    className={cn(
+                      "py-2 px-3 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors",
+                      isAbsent ? "bg-red-500 text-white shadow-md shadow-red-500/20" : "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                    )}
+                  >
+                    <X className="w-4 h-4" /> Absent
+                  </button>
+                </div>
+              </motion.div>
             );
           })}
         </AnimatePresence>

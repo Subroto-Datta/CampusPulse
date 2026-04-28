@@ -96,18 +96,19 @@ export default function Reports() {
           {/* Daily Trend Chart */}
           {activeTab === 'daily' && (
             <div>
-              <h3 className="text-lg font-semibold text-text mb-6">Daily Attendance % (Last 30 days)</h3>
+              <h3 className="text-lg font-semibold text-text mb-6">Daily Attendance % vs Gate Entries (Last 30 days)</h3>
               <ResponsiveContainer width="100%" height={350}>
                 <LineChart data={data}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
                   <XAxis dataKey="session_date" tick={{ fill: '#a1a1aa', fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => v?.slice(5)} />
-                  <YAxis tick={{ fill: '#a1a1aa', fontSize: 12 }} domain={[0, 100]} tickLine={false} axisLine={false} />
+                  <YAxis yAxisId="left" tick={{ fill: '#a1a1aa', fontSize: 12 }} domain={[0, 100]} tickLine={false} axisLine={false} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fill: '#a1a1aa', fontSize: 12 }} tickLine={false} axisLine={false} />
                   <Tooltip
                     contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: '12px', color: '#f4f4f5', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
                     labelFormatter={(v) => `Date: ${v}`}
-                    formatter={(v) => [`${v}%`, 'Attendance']}
                   />
-                  <Line type="monotone" dataKey="pct" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  <Line yAxisId="left" type="monotone" name="Attendance %" dataKey="pct" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  <Line yAxisId="right" type="monotone" name="Gate Entries" dataKey="gate_entries" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }} activeDot={{ r: 6, strokeWidth: 0 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
