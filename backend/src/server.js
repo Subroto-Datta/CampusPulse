@@ -12,3 +12,5 @@ app.listen(PORT, () => {
   console.log(`   Database    : ${dbType} [${dbStatus}]\n`);
 });
 
+module.exports = app;
+
