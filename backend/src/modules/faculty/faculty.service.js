@@ -93,11 +93,12 @@ async function getSessionStudents(sessionId) {
   const course = await getItem('Courses', { courseId: session.course_id });
   if (!course) throw new AppError('Course not found', 404);
 
-  // Directly fetch students by division and matching semester instead of relying on Enrollments table
-  const allStudents = await scanItems('Students', {
-    FilterExpression: 'division = :div AND semester = :sem',
-    ExpressionAttributeValues: { ':div': session.division, ':sem': course.semester }
-  });
+  // Directly fetch students and filter in memory to handle data type/case mismatches in Supabase
+  const students = await scanItems('Students');
+  const validStudents = students.filter(s => 
+    String(s.division || '').trim().toUpperCase() === String(session.division || '').trim().toUpperCase() &&
+    Number(s.semester) === Number(course.semester)
+  );
 
   // Get attendance records for this session to map to students
   const attendanceRecords = await queryItems('AttendanceRecords', {
@@ -107,7 +108,7 @@ async function getSessionStudents(sessionId) {
 
   const studs = [];
   
-  for (const student of allStudents) {
+  for (const student of validStudents) {
     const user = await getItem('Users', { userId: student.user_id });
     const ar = attendanceRecords.find(a => a.student_id === student.studentId);
     studs.push({
@@ -201,11 +202,12 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
   const course = await getItem('Courses', { courseId: session.course_id });
   if (!course) throw new AppError('Course not found', 404);
 
-  // Directly fetch valid students
-  const validStudents = await scanItems('Students', {
-    FilterExpression: 'division = :div AND semester = :sem',
-    ExpressionAttributeValues: { ':div': session.division, ':sem': course.semester }
-  });
+  // Directly fetch valid students and filter in memory for robustness
+  const students = await scanItems('Students');
+  const validStudents = students.filter(s => 
+    String(s.division || '').trim().toUpperCase() === String(session.division || '').trim().toUpperCase() &&
+    Number(s.semester) === Number(course.semester)
+  );
 
   const absentSet = new Set(absentStudentIds || []);
 
