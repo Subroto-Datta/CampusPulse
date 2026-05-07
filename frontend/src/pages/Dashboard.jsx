@@ -40,6 +40,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [sessions, setSessions] = useState([]);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { loadData(); }, [user]);
@@ -58,6 +59,7 @@ export default function Dashboard() {
       if (user?.role === 'student' && user?.student_id) {
         const { data } = await api.get(`/students/${user.student_id}`);
         setStats(data.data.attendance_summary);
+        setAttendanceRecords(data.data.attendance_records || []);
       }
     } catch (err) {
       console.error('Dashboard load error:', err);
@@ -219,6 +221,85 @@ export default function Dashboard() {
               <ArrowRight className="w-6 h-6 text-text-muted group-hover:text-primary transition-colors hidden sm:block" />
             </motion.div>
           </Link>
+
+          {/* Lecture-wise Attendance */}
+          <motion.div variants={item} className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-text tracking-tight">Recent Lecture History</h2>
+              <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Attendance Timeline</span>
+            </div>
+            
+            {attendanceRecords.length === 0 ? (
+              <div className="glass-panel p-12 text-center">
+                <GraduationCap className="w-12 h-12 text-surface-border mx-auto mb-4" />
+                <p className="text-text-muted">No attendance history available yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {attendanceRecords.map((record, idx) => {
+                  const isPresent = ['PRESENT_CONFIRMED', 'LATE_PRESENT'].includes(record.status);
+                  const isProxy = record.status === 'PROXY_SUSPECTED' || record.status === 'MANUAL_PRESENT';
+                  const isBunk = record.status === 'BUNK_SUSPECTED';
+                  const isAbsent = record.status === 'ABSENT_CONFIRMED';
+                  
+                  return (
+                    <motion.div 
+                      key={idx} 
+                      whileHover={{ x: 4 }}
+                      className="glass-panel p-4 flex items-center justify-between border-l-4 group"
+                      style={{ 
+                        borderLeftColor: isPresent ? '#10b981' : 
+                                        isProxy ? '#8b5cf6' : 
+                                        (isBunk || isAbsent ? '#ef4444' : '#f59e0b') 
+                      }}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-surface border border-surface-border flex items-center justify-center text-xs font-bold text-text-muted group-hover:border-primary/30 transition-colors">
+                          {record.course_code?.slice(-3) || '??'}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-text text-base">{record.course_name || 'General Session'}</h3>
+                            {record.late_flag && (
+                              <span className="flex items-center gap-1 text-[9px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-bold">
+                                <Clock className="w-2.5 h-2.5" /> LATE
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-text-muted flex items-center gap-3 mt-0.5">
+                            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {record.start_time?.slice(0, 5)} - {record.end_time?.slice(0, 5)}</span>
+                            <span className="w-1 h-1 rounded-full bg-surface-border" />
+                            <span>{new Date(record.session_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-1.5">
+                        <div className={cn(
+                          "px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border",
+                          isPresent ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : 
+                          isProxy ? "bg-violet-500/10 text-violet-500 border-violet-500/20" :
+                          (isBunk || isAbsent ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20")
+                        )}>
+                          {record.status === 'BUNK_SUSPECTED' ? 'Bunked' : 
+                           record.status === 'PROXY_SUSPECTED' || record.status === 'MANUAL_PRESENT' ? 'Proxy' :
+                           record.status === 'PRESENT_CONFIRMED' ? 'Present' : 
+                           record.status === 'ABSENT_CONFIRMED' ? 'Absent' : 
+                           record.status?.split('_')[0].toLowerCase()}
+                        </div>
+                        {isBunk && (
+                          <span className="text-[9px] text-red-400 font-medium italic bg-red-400/5 px-1.5 py-0.5 rounded">Campus match found</span>
+                        )}
+                        {isProxy && (
+                          <span className="text-[9px] text-violet-400 font-medium italic bg-violet-400/5 px-1.5 py-0.5 rounded">No gate entry found</span>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
         </motion.div>
       )}
 

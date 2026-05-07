@@ -97,8 +97,28 @@ async function getStudentDetail(studentId) {
     const records = mock.store.attendance_records.filter(ar => ar.student_id === studentId);
     const present = records.filter(r => ['PRESENT_CONFIRMED', 'LATE_PRESENT', 'MANUAL_PRESENT'].includes(r.status)).length;
     const absent = records.filter(r => ['ABSENT_CONFIRMED', 'BUNK_SUSPECTED'].includes(r.status)).length;
+    const enrichedRecords = records.map(r => {
+      const ls = mock.store.lecture_sessions.find(session => session.id === r.session_id);
+      const c = ls ? mock.getCourse(ls.course_id) : null;
+      return {
+        ...r,
+        session_date: ls?.session_date,
+        start_time: ls?.start_time,
+        end_time: ls?.end_time,
+        course_name: c?.name,
+        course_code: c?.code
+      };
+    });
+
+    enrichedRecords.sort((a, b) => {
+      const dateCompare = (b.session_date || '').localeCompare(a.session_date || '');
+      if (dateCompare !== 0) return dateCompare;
+      return (b.start_time || '').localeCompare(a.start_time || '');
+    });
+
     return { ...s, full_name: u?.full_name, email: u?.email, department_name: d?.name, department_code: d?.code,
-      attendance_summary: { total_sessions: records.length, present, absent, needs_review: records.length - present - absent, late_count: records.filter(r => r.late_flag).length, attendance_pct: records.length ? Math.round(present / records.length * 1000) / 10 : null }
+      attendance_summary: { total_sessions: records.length, present, absent, needs_review: records.length - present - absent, late_count: records.filter(r => r.late_flag).length, attendance_pct: records.length ? Math.round(present / records.length * 1000) / 10 : null },
+      attendance_records: enrichedRecords
     };
   }
 
@@ -143,6 +163,22 @@ async function getStudentDetail(studentId) {
       late_count: lateCount,
       attendance_pct: pct,
     },
+    attendance_records: await Promise.all(records.map(async (r) => {
+      const session = await getItem('LectureSessions', { sessionId: r.session_id });
+      const course = session ? await getItem('Courses', { courseId: session.course_id }) : null;
+      return {
+        ...r,
+        session_date: session?.session_date,
+        start_time: session?.start_time,
+        end_time: session?.end_time,
+        course_name: course?.name,
+        course_code: course?.code,
+      };
+    })).then(recs => recs.sort((a, b) => {
+      const dateCompare = (b.session_date || '').localeCompare(a.session_date || '');
+      if (dateCompare !== 0) return dateCompare;
+      return (b.start_time || '').localeCompare(a.start_time || '');
+    })),
   };
 }
 

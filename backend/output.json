@@ -1,0 +1,70 @@
+{
+  "count": 5,
+  "sessions": [
+    {
+      "id": "91684ff6-71b3-4a7c-b949-dbb4d021a436",
+      "course_id": "c95f011e-881d-494d-bf87-f1b28c810cc7",
+      "faculty_id": "609e736b-dc47-462a-bea0-3393ac2dd40d",
+      "division": "A",
+      "session_date": "2026-04-27",
+      "start_time": "10:00:00",
+      "end_time": "11:00:00",
+      "is_completed": true,
+      "created_at": "2026-04-27T14:43:32.717+00:00",
+      "updated_at": "2026-04-27T15:01:07.612215+00:00",
+      "sessionId": "91684ff6-71b3-4a7c-b949-dbb4d021a436"
+    },
+    {
+      "id": "1eda2404-af86-4667-9a10-d1ae56391bde",
+      "course_id": "c95f011e-881d-494d-bf87-f1b28c810cc7",
+      "faculty_id": "609e736b-dc47-462a-bea0-3393ac2dd40d",
+      "division": "A",
+      "session_date": "2026-05-27",
+      "start_time": "10:00:00",
+      "end_time": "11:00:00",
+      "is_completed": false,
+      "created_at": "2026-04-27T15:34:03.525+00:00",
+      "updated_at": "2026-04-27T15:34:03.525+00:00",
+      "sessionId": "1eda2404-af86-4667-9a10-d1ae56391bde"
+    },
+    {
+      "id": "2144af01-9e20-4142-800a-1f7c2ba3a442",
+      "course_id": "c95f011e-881d-494d-bf87-f1b28c810cc7",
+      "faculty_id": "609e736b-dc47-462a-bea0-3393ac2dd40d",
+      "division": "A",
+      "session_date": "2026-04-28",
+      "start_time": "10:00:00",
+      "end_time": "11:00:00",
+      "is_completed": true,
+      "created_at": "2026-04-28T06:42:35.299+00:00",
+      "updated_at": "2026-04-28T08:12:59.058949+00:00",
+      "sessionId": "2144af01-9e20-4142-800a-1f7c2ba3a442"
+    },
+    {
+      "id": "bb69963c-d553-4c7b-a71f-8b4128e569bb",
+      "course_id": "c95f011e-881d-494d-bf87-f1b28c810cc7",
+      "faculty_id": "609e736b-dc47-462a-bea0-3393ac2dd40d",
+      "division": "A",
+      "session_date": "2026-04-28",
+      "start_time": "11:00:00",
+      "end_time": "12:00:00",
+      "is_completed": true,
+      "created_at": "2026-04-28T07:52:44.77+00:00",
+      "updated_at": "2026-04-28T08:48:41.840421+00:00",
+      "sessionId": "bb69963c-d553-4c7b-a71f-8b4128e569bb"
+    },
+    {
+      "id": "17d936fd-1f2a-41d5-976f-2e4b8d01cfc5",
+      "course_id": "c95f011e-881d-494d-bf87-f1b28c810cc7",
+      "faculty_id": "609e736b-dc47-462a-bea0-3393ac2dd40d",
+      "division": "A",
+      "session_date": "2026-04-29",
+      "start_time": "10:00:00",
+      "end_time": "11:00:00",
+      "is_completed": false,
+      "created_at": "2026-04-28T09:26:21.926+00:00",
+      "updated_at": "2026-04-28T09:26:21.926+00:00",
+      "sessionId": "17d936fd-1f2a-41d5-976f-2e4b8d01cfc5"
+    }
+  ]
+}

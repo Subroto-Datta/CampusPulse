@@ -147,9 +147,12 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
       const gateEntry = mock.store.gate_logs.find(g => g.student_id === s.id && g.scanned_at.slice(0, 10) === session.session_date);
       let status = 'NEEDS_REVIEW', lateFlag = false, gateEntryId = null;
 
-      if (isAbsent && gateEntry) { status = 'BUNK_SUSPECTED'; gateEntryId = gateEntry.id; }
-      else if (isAbsent) { status = 'ABSENT_CONFIRMED'; }
-      else if (gateEntry) {
+      if (isAbsent && gateEntry) { 
+        status = 'BUNK_SUSPECTED'; 
+        gateEntryId = gateEntry.id; 
+      } else if (isAbsent) { 
+        status = 'ABSENT_CONFIRMED'; 
+      } else if (gateEntry) {
         gateEntryId = gateEntry.id;
         const scanDate = new Date(gateEntry.scanned_at);
         const sessionStart = new Date(session.session_date + 'T' + session.start_time);
@@ -157,7 +160,7 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
         if (diffMin <= 15) { status = 'PRESENT_CONFIRMED'; presentCount++; }
         else { status = 'LATE_PRESENT'; lateFlag = true; presentCount++; }
       } else {
-        status = 'MANUAL_PRESENT'; presentCount++;
+        status = 'PROXY_SUSPECTED'; presentCount++;
       }
 
       mock.store.attendance_records.push({ id: mock.uuid(), session_id: sessionId, student_id: s.id, status, marked_by_faculty: true, gate_entry_id: gateEntryId, late_flag: lateFlag });
@@ -254,7 +257,7 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
         lateFlag = true;
       }
     } else {
-      status = 'MANUAL_PRESENT';
+      status = 'PROXY_SUSPECTED';
     }
 
     await putItem('AttendanceRecords', {
