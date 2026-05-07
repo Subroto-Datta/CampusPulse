@@ -143,10 +143,10 @@ async function lowAttendanceStudents() {
 
     if (records.length === 0) continue;
 
-    const present = records.filter(r => r.status === 'PRESENT_CONFIRMED').length;
+    const present = records.filter(r => ['PRESENT_CONFIRMED', 'LATE_PRESENT', 'MANUAL_PRESENT'].includes(r.status)).length;
     const pct = Math.round(present / records.length * 1000) / 10;
 
-    if (pct < 75) {
+    if (pct < 60) {
       const user = await getItem('Users', { userId: student.user_id });
       const dept = await getItem('Departments', { departmentId: student.department_id });
       results.push({

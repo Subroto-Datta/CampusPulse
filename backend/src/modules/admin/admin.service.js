@@ -61,12 +61,15 @@ async function getDashboardStats() {
 
   const pct = totalRecords > 0 ? Math.round(presentCount / totalRecords * 1000) / 10 : 0;
 
+  const { lowAttendanceStudents } = require('../reports/reports.service');
+  const lowAttList = await lowAttendanceStudents();
+
   return {
     today_entries: todayEntries,
     today_attendance_pct: pct,
     late_entries: lateCount,
     bunk_alerts: allRecords.length,
-    low_attendance_students: 0,
+    low_attendance_students: lowAttList.length,
   };
 }
 

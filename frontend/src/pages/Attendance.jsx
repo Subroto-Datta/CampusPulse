@@ -3,10 +3,11 @@ import api from '../services/api';
 import { HiOutlineExclamation, HiOutlineCheckCircle } from 'react-icons/hi';
 
 const ALERT_COLORS = {
-  ENTERED_BUT_ABSENT: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', label: 'Campus Entry but Absent' },
-  PRESENT_NO_GATE_LOG: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400', label: 'Present without Gate Log' },
+  ENTERED_BUT_ABSENT: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', label: 'Bunk Suspected (Gate Entry, Class Absent)' },
+  PRESENT_NO_GATE_LOG: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400', label: 'Proxy Suspected (Class Present, No Gate)' },
+  ABSENT: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', label: 'Absent Confirmed' },
   REPEATED_LATE: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', label: 'Repeated Late Arrival' },
-  BELOW_75_ATTENDANCE: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', label: 'Below 75% Attendance' },
+  BELOW_75_ATTENDANCE: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', label: 'Below 60% Attendance' },
 };
 
 export default function Attendance() {

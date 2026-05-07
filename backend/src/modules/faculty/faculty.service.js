@@ -226,7 +226,7 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
   for (const student of validStudents) {
     totalStudents++;
 
-    const isAbsent = absentSet.has(student.studentId);
+    const isAbsent = absentSet.has(student.id);
 
     // Check gate entry for this student on session date
     const gateLogs = await queryItems('GateLogs', {
@@ -234,7 +234,7 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
       KeyConditionExpression: 'student_id = :sid',
       FilterExpression: '#sd = :date',
       ExpressionAttributeNames: { '#sd': 'scan_date' },
-      ExpressionAttributeValues: { ':sid': student.studentId, ':date': session.session_date },
+      ExpressionAttributeValues: { ':sid': student.id, ':date': session.session_date },
       ScanIndexForward: true,
       Limit: 1,
     });
@@ -244,11 +244,11 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
 
     if (isAbsent && gateEntry) {
       status = 'BUNK_SUSPECTED';
-      gateEntryId = gateEntry.logId;
+      gateEntryId = gateEntry.id;
     } else if (isAbsent) {
       status = 'ABSENT_CONFIRMED';
     } else if (gateEntry) {
-      gateEntryId = gateEntry.logId;
+      gateEntryId = gateEntry.id;
       const scanDate = new Date(gateEntry.scanned_at);
       const sessionStart = new Date(`${session.session_date}T${session.start_time}`);
       const diffMin = (scanDate - sessionStart) / 60000;
@@ -259,17 +259,17 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
         lateFlag = true;
       }
     } else {
-      status = 'PROXY_SUSPECTED';
+      status = 'MANUAL_PRESENT';
     }
 
     await putItem('AttendanceRecords', {
       session_id: sessionId,
-      student_id: student.studentId,
+      student_id: student.id,
       status,
       marked_by_faculty: true,
       gate_entry_id: gateEntryId,
       late_flag: lateFlag,
-      resolved_at: now,
+      resolved_at: (status === 'BUNK_SUSPECTED' || status === 'MANUAL_PRESENT') ? null : now,
       created_at: now,
       updated_at: now,
     });
@@ -282,14 +282,14 @@ async function submitAttendance(sessionId, absentStudentIds, userId) {
         KeyConditionExpression: 'student_id = :sid',
         FilterExpression: '#st = :bunk',
         ExpressionAttributeNames: { '#st': 'status' },
-        ExpressionAttributeValues: { ':sid': student.studentId, ':bunk': 'BUNK_SUSPECTED' },
+        ExpressionAttributeValues: { ':sid': student.id, ':bunk': 'BUNK_SUSPECTED' },
       });
       const recentBunks = allStudentRecords.filter(r => (r.created_at || '') >= thirtyDaysAgo);
-      if (recentBunks.length >= 3) {
+      if (recentBunks.length >= 1) {
         await putItem('Alerts', {
           alertId: uuidv4(),
-          student_id: student.studentId,
-          alert_type: 'RISK_FLAG',
+          student_id: student.id,
+          alert_type: 'ENTERED_BUT_ABSENT',
           session_id: sessionId,
           message: 'Repeated suspicious mismatches (3+ in 30 days)',
           is_resolved: false,

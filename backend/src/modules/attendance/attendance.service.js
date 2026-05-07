@@ -74,18 +74,37 @@ async function getAlerts({ resolved, limit = 50 }) {
 
   const { scanItems, getItem } = require('../../config/db');
 
-  // Scan alerts with optional resolved filter
-  const filterParts = [];
-  const exprValues = {};
-  if (resolved !== undefined) {
-    filterParts.push('is_resolved = :resolved');
-    exprValues[':resolved'] = resolved === 'true';
-  }
-
-  let alerts = await scanItems('Alerts', {
-    ...(filterParts.length ? { FilterExpression: filterParts.join(' AND ') } : {}),
-    ...(Object.keys(exprValues).length ? { ExpressionAttributeValues: exprValues } : {}),
+  // 1. Fetch live anomalies from Attendance Records
+  const records = await scanItems('AttendanceRecords');
+  const anomalies = records.filter(r => ['BUNK_SUSPECTED', 'MANUAL_PRESENT', 'ABSENT_CONFIRMED'].includes(r.status));
+  
+  const virtualAlerts = anomalies.map(r => {
+     let type = 'ABSENT';
+     let msg = 'Student was absent from the assigned lecture session.';
+     if (r.status === 'BUNK_SUSPECTED') { type = 'ENTERED_BUT_ABSENT'; msg = 'Student scanned physical gate but was manually marked absent by faculty.'; }
+     if (r.status === 'MANUAL_PRESENT') { type = 'PRESENT_NO_GATE_LOG'; msg = 'Student was manually marked present by faculty, but no physical gate entry exists.'; }
+     
+     return {
+       alertId: r.id || r.attendanceId,
+       student_id: r.student_id,
+       alert_type: type,
+       session_id: r.session_id,
+       message: msg,
+       is_resolved: !!r.resolved_at,
+       created_at: r.created_at
+     };
   });
+
+  // 2. Fetch formally registered Alerts
+  let realAlerts = await scanItems('Alerts');
+  
+  let alerts = [...virtualAlerts, ...realAlerts];
+
+  // 3. Apply Filters
+  if (resolved !== undefined) {
+    const isRes = resolved === 'true';
+    alerts = alerts.filter(a => !!a.is_resolved === isRes);
+  }
 
   // Sort by created_at desc
   alerts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));

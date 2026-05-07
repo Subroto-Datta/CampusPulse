@@ -1,0 +1,4 @@
+Error in submitAttendance: invalid input value for enum attendance_status: "PROXY_SUSPECTED"
+undefined
+Error in submitAttendance: invalid input value for enum attendance_status: "PROXY_SUSPECTED"
+undefined
