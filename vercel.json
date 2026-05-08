@@ -7,14 +7,14 @@
       "config": { "distDir": "dist" }
     },
     {
-      "src": "backend/src/server.js",
+      "src": "backend/src/app.js",
       "use": "@vercel/node"
     }
   ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "backend/src/server.js"
+      "destination": "backend/src/app.js"
     },
     {
       "source": "/((?!api/|assets/|favicon.ico|.*\\..*).*)",
@@ -26,5 +26,3 @@
     }
   ]
 }
-
-

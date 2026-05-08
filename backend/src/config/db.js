@@ -17,6 +17,7 @@ const {
 } = require('@aws-sdk/lib-dynamodb');
 const env = require('./env');
 const supabase = require('./supabase');
+const AppError = require('../utils/AppError');
 
 const DB_TYPE = env.dbType || 'dynamodb';
 console.log(`[Database] Active System: ${DB_TYPE.toUpperCase()}`);
@@ -129,6 +130,7 @@ function filterSqlColumns(table, data) {
 
 async function getItem(table, key) {
   if (DB_TYPE === 'supabase') {
+    if (!supabase) throw new AppError('Supabase client not initialized. Check your Environment Variables in Vercel.', 500);
     const t = tableName(table);
     const mappedKey = mapKeys(t, key);
     const { data, error } = await supabase.from(t).select('*').match(mappedKey).maybeSingle();
@@ -138,6 +140,7 @@ async function getItem(table, key) {
     }
     return reverseMap(t, data);
   }
+  if (!docClient) throw new AppError('DynamoDB client not initialized. Check your Environment Variables in Vercel.', 500);
   const result = await docClient.send(new GetCommand({ TableName: tableName(table), Key: key }));
   return result.Item || null;
 }
@@ -281,6 +284,7 @@ function applyExpression(query, expression, values, names) {
 
 async function queryItems(table, params) {
   if (DB_TYPE === 'supabase') {
+    if (!supabase) throw new AppError('Supabase client not initialized. Check your Environment Variables in Vercel.', 500);
     const t = tableName(table);
     let query = supabase.from(t).select('*');
     
@@ -305,12 +309,14 @@ async function queryItems(table, params) {
     return (data || []).map(item => reverseMap(t, item));
   }
   
+  if (!docClient) throw new AppError('DynamoDB client not initialized. Check your Environment Variables in Vercel.', 500);
   const result = await docClient.send(new QueryCommand({ TableName: tableName(table), ...params }));
   return result.Items || [];
 }
 
 async function scanItems(table, params = {}) {
   if (DB_TYPE === 'supabase') {
+    if (!supabase) throw new AppError('Supabase client not initialized. Check your Environment Variables in Vercel.', 500);
     const t = tableName(table);
     let query = supabase.from(t).select('*');
     
@@ -328,6 +334,7 @@ async function scanItems(table, params = {}) {
     return (data || []).map(item => reverseMap(t, item));
   }
 
+  if (!docClient) throw new AppError('DynamoDB client not initialized. Check your Environment Variables in Vercel.', 500);
   const allItems = [];
   let lastKey = undefined;
   do {
